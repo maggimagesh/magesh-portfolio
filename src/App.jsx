@@ -70,7 +70,7 @@ export default function App() {
                     <div className="relative">
                       <CompanyLogo logo={item.logo} company={item.company} />
                       {!isLast && (
-                        <span className="absolute top-10 bottom-0 left-1/2 -translate-x-1/2 w-px bg-slate-700/50"></span>
+                        <span className="absolute top-10 bottom-0 left-1/2 -translate-x-1/2 w-px bg-slate-300 dark:bg-slate-700/50"></span>
                       )}
                     </div>
                     <div className="flex items-start justify-between gap-4">
@@ -78,10 +78,10 @@ export default function App() {
                         <div className="font-medium">{item.company}</div>
                         <div className="text-xs text-slate-500 dark:text-slate-400">{item.role}</div>
                         {item.summary && (
-                          <p className="mt-2 text-sm leading-6 text-slate-300/90">{item.summary}</p>
+                          <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300/90">{item.summary}</p>
                         )}
                         {item.highlights?.length ? (
-                          <ul className="mt-2 list-disc pl-5 text-sm space-y-1">
+                          <ul className="mt-2 list-disc pl-5 text-sm space-y-1 text-slate-700 dark:text-slate-200">
                             {item.highlights.map((h, i) => (
                               <li key={i}>{h}</li>
                             ))}
@@ -113,7 +113,7 @@ export default function App() {
                 <div className="font-medium">{p.name}</div>
                 {p.status && <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{p.status}</div>}
                 {p.period && <div className="text-xs text-slate-500 dark:text-slate-400">{p.period}</div>}
-                {p.description && <p className="mt-2 text-sm leading-6">{p.description}</p>}
+                {p.description && <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">{p.description}</p>}
                 {p.tech?.length && (
                   <div className="mt-3 flex flex-wrap gap-2 text-xs">
                     {p.tech.map((t, i) => (
@@ -142,28 +142,28 @@ export default function App() {
           <div className="grid grid-cols-[120px,1fr] gap-x-6 gap-y-4">
             {languages?.length ? (
               <>
-                <div className="text-slate-400 text-sm">Languages</div>
-                <div className="text-sm text-slate-200">
+                <div className="text-slate-500 dark:text-slate-400 text-sm">Languages</div>
+                <div className="text-sm text-slate-700 dark:text-slate-200">
                   {languages.map((l) => `${l.name} — ${l.level}`).join(' · ')}
                 </div>
               </>
             ) : null}
             {personality?.length ? (
               <>
-                <div className="text-slate-400 text-sm">Personality</div>
+                <div className="text-slate-500 dark:text-slate-400 text-sm">Personality</div>
                 <div className="flex flex-wrap items-center gap-2">
                   {personality.map((p, i) => (
-                    <span key={i} className="px-2 py-1 rounded-md text-xs bg-slate-800/40 border border-slate-700/60">{p}</span>
+                    <span key={i} className="px-2 py-1 rounded-md text-xs bg-slate-100 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-700/60">{p}</span>
                   ))}
                 </div>
               </>
             ) : null}
             {interests?.length ? (
               <>
-                <div className="text-slate-400 text-sm">Interests</div>
+                <div className="text-slate-500 dark:text-slate-400 text-sm">Interests</div>
                 <div className="flex flex-wrap items-center gap-2">
                   {interests.map((it, i) => (
-                    <span key={i} className="px-2 py-1 rounded-md text-xs bg-slate-800/40 border border-slate-700/60">{it}</span>
+                    <span key={i} className="px-2 py-1 rounded-md text-xs bg-slate-100 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-700/60">{it}</span>
                   ))}
                 </div>
               </>
