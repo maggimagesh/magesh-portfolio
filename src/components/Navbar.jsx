@@ -20,6 +20,7 @@ export default function Navbar({ personal }) {
         <div className="flex items-center gap-5 text-sm">
           <a href="#home" className="hover:opacity-80">About</a>
           <a href="#experience" className="hover:opacity-80">Experience</a>
+          <a href="#projects" className="hover:opacity-80">Projects</a>
           <a href="#skills" className="hover:opacity-80">Skills</a>
           <a href="#education" className="hover:opacity-80">Education</a>
           <a href="#contact" className="hover:opacity-80">Contact</a>

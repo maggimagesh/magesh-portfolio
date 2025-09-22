@@ -74,5 +74,13 @@
   ],
   "personality": ["Meticulous", "Open-minded", "Goal-oriented", "Fast learner", "Team player"],
   "interests": ["Movies", "Literature", "Art", "Travelling", "Cultural diversity"],
-  "projects": []
+  "projects": [
+    {
+      "name": "AI Assisted Job Search Bot",
+      "link": "https://career-spider.vercel.app",
+      "status": "Live",
+      "description": "Career Spider helps discover and track roles with AI-assisted search and filtering.",
+      "tech": ["Next.js", "TypeScript", "TailwindCSS", "OpenAI"]
+    }
+  ]
 }
