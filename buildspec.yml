@@ -2,48 +2,29 @@ version: 0.2
 
 env:
   variables:
-    # Defaults for your project/account
-    ACCOUNT_ID: "983050536265"
     AWS_DEFAULT_REGION: "ap-south-1"
-    ECR_REPOSITORY: "magesh-portfolio"
-    CONTAINER_NAME: "magesh-portfolio"
-    # Optional: IMAGE_TAG (defaults to first 7 chars of commit SHA)
+    S3_BUCKET: "magesh-portfolio"
+    BUILD_DIR: "dist"
 
 phases:
-  pre_build:
+  install:
+    runtime-versions:
+      nodejs: 20
     commands:
-      - set -euo pipefail
-      - echo "Resolving AWS account and region"
-      - ACCOUNT_ID=${ACCOUNT_ID:-$(aws sts get-caller-identity --query Account --output text)}
-      - REGION=${AWS_REGION:-${AWS_DEFAULT_REGION:-ap-south-1}}
-      - |
-        if [ -z "${ECR_REPOSITORY}" ]; then
-          echo "ECR_REPOSITORY environment variable is required" >&2
-          exit 1
-        fi
-      - REPOSITORY_URI=${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPOSITORY}
-      - echo "Ensuring ECR repository exists: ${ECR_REPOSITORY}"
-      - aws ecr describe-repositories --repository-names ${ECR_REPOSITORY} --region ${REGION} || aws ecr create-repository --repository-name ${ECR_REPOSITORY} --region ${REGION}
-      - echo "Logging in to Amazon ECR"
-      - aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com
-      - IMAGE_TAG=${IMAGE_TAG:-${CODEBUILD_RESOLVED_SOURCE_VERSION:0:7}}
-      - echo "Image tag: ${IMAGE_TAG}"
+      - echo "Installing dependencies..."
+      - npm install
 
   build:
     commands:
-      - echo "Building Docker image"
-      - docker build -t ${REPOSITORY_URI}:${IMAGE_TAG} .
+      - echo "Building the React/Vite app..."
+      - npm run build
 
   post_build:
     commands:
-      - echo "Pushing image to ECR"
-      - docker push ${REPOSITORY_URI}:${IMAGE_TAG}
-      - echo "Writing imagedefinitions.json for ECS deployments"
-      - printf '[{"name":"%s","imageUri":"%s"}]' ${CONTAINER_NAME:-magesh-portfolio} ${REPOSITORY_URI}:${IMAGE_TAG} > imagedefinitions.json
-      - echo "Image URI: ${REPOSITORY_URI}:${IMAGE_TAG}"
+      - echo "Deploying to S3 bucket: $S3_BUCKET..."
+      - aws s3 sync $BUILD_DIR/ s3://$S3_BUCKET/ --delete
+      - echo "Deployment completed successfully!"
 
 artifacts:
   files:
-    - imagedefinitions.json
-
-
+    - '**/*'
