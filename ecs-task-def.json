@@ -1,0 +1,23 @@
+{
+    "family": "magesh-portfolio",
+    "networkMode": "awsvpc",
+    "containerDefinitions": [
+      {
+        "name": "magesh-portfolio",
+        "image": "983050536265.dkr.ecr.ap-south-1.amazonaws.com/magesh-portfolio:latest",
+        "essential": true,
+        "portMappings": [
+          {
+            "containerPort": 80,
+            "hostPort": 80
+          }
+        ],
+        "cpu": 1024,         
+        "memory": 3072       
+      }
+    ],
+    "requiresCompatibilities": ["FARGATE"],
+    "cpu": "1024",           
+    "memory": "3072"         
+  }
+  
