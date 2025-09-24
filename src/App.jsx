@@ -14,7 +14,7 @@ function useResume() {
     else root.classList.remove('dark')
   }, [])
   React.useEffect(() => {
-    fetch('/resume.json')
+    fetch('./resume.json')
       .then((r) => r.json())
       .then(setData)
       .catch((e) => setError(e))
