@@ -21,11 +21,8 @@
     # Copy custom nginx configuration
     COPY nginx.conf /etc/nginx/conf.d/default.conf
     
-    # Copy build output from build stage
+    # Copy build output from build stage (includes resume.json automatically)
     COPY --from=build /app/dist /usr/share/nginx/html
-    
-    # Copy the public directory (contains resume.json or other static assets)
-    COPY --from=build /app/public /usr/share/nginx/html/public
     
     # Expose port 80
     EXPOSE 80
