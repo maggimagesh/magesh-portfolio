@@ -10,11 +10,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout the repo
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2. Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -22,27 +20,23 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-south-1
 
-      # 3. Login to Amazon ECR
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      # 4. Build Docker image
       - name: Build Docker image
         run: |
           docker build -t magesh-portfolio .
           docker tag magesh-portfolio:latest 983050536265.dkr.ecr.ap-south-1.amazonaws.com/magesh-portfolio:latest
 
-      # 5. Push Docker image to ECR
       - name: Push Docker image to ECR
         run: |
           docker push 983050536265.dkr.ecr.ap-south-1.amazonaws.com/magesh-portfolio:latest
 
-      # 6. Update ECS service
       - name: Deploy to ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
-          task-definition: ecs-task-def.json   # path to your ECS task definition JSON
+          task-definition: ecs-task-def.json
           service: magesh-portfolio-task-service-wiydoql4
           cluster: magesh-portfolio-cluster-2
           wait-for-service-stability: true
