@@ -44,5 +44,5 @@ jobs:
         with:
           task-definition: ecs-task-def.json   # path to your ECS task definition JSON
           service: magesh-portfolio
-          cluster: magesh-portfolio-2
+          cluster: magesh-portfolio-cluster-2
           wait-for-service-stability: true
