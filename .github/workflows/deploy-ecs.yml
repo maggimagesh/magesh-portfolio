@@ -43,6 +43,6 @@ jobs:
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ecs-task-def.json   # path to your ECS task definition JSON
-          service: magesh-portfolio
+          service: magesh-portfolio-task-service-wiydoql4
           cluster: magesh-portfolio-cluster-2
           wait-for-service-stability: true
