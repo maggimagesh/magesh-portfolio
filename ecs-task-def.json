@@ -17,7 +17,7 @@
         "logConfiguration": {
           "logDriver": "awslogs",
           "options": {
-            "awslogs-group": "/ecs/magesh-portfolio",
+            "awslogs-group": "/ecs/magesh-portfolio-task",
             "awslogs-region": "ap-south-1",
             "awslogs-stream-prefix": "ecs"
           }
