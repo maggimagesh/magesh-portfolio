@@ -1,5 +1,6 @@
 {
     "family": "magesh-portfolio",
+    "executionRoleArn": "arn:aws:iam::983050536265:role/ecsTaskExecutionRole-magesh-portfolio",
     "networkMode": "awsvpc",
     "containerDefinitions": [
       {
@@ -12,12 +13,18 @@
             "hostPort": 80
           }
         ],
-        "cpu": 1024,         
-        "memory": 3072       
+        "logConfiguration": {
+          "logDriver": "awslogs",
+          "options": {
+            "awslogs-group": "/ecs/magesh-portfolio",
+            "awslogs-region": "ap-south-1",
+            "awslogs-stream-prefix": "ecs"
+          }
+        }
       }
     ],
     "requiresCompatibilities": ["FARGATE"],
-    "cpu": "1024",           
-    "memory": "3072"         
+    "cpu": "1024",
+    "memory": "3072"
   }
   
