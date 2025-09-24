@@ -6,35 +6,24 @@ env:
     AWS_DEFAULT_REGION: "ap-south-1"
     ECR_REPOSITORY: "magesh-portfolio"
     CONTAINER_NAME: "magesh-portfolio"
-    IMAGE_TAG: ""
 
 phases:
   pre_build:
     commands:
-      - set -euo pipefail
-      - echo "Resolving AWS account and region"
-      - ACCOUNT_ID=${ACCOUNT_ID:-$(aws sts get-caller-identity --query Account --output text)}
-      - REGION=${AWS_DEFAULT_REGION}
-      - REPOSITORY_URI=${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPOSITORY}
-      - echo "Ensuring ECR repository exists"
-      - aws ecr describe-repositories --repository-names ${ECR_REPOSITORY} --region ${REGION} || aws ecr create-repository --repository-name ${ECR_REPOSITORY} --region ${REGION}
-      - echo "Logging in to Amazon ECR"
-      - aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${REPOSITORY_URI}
-      - IMAGE_TAG=${IMAGE_TAG:-${CODEBUILD_RESOLVED_SOURCE_VERSION:0:7}}
-      - echo "Image tag: ${IMAGE_TAG}"
-
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - IMAGE_TAG=${IMAGE_TAG:-latest}
+      - REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY
   build:
     commands:
-      - echo "Building Docker image"
-      - docker build -t ${REPOSITORY_URI}:${IMAGE_TAG} .
-
+      - echo Building the Docker image...
+      - docker build -t $REPOSITORY_URI:$IMAGE_TAG .
   post_build:
     commands:
-      - echo "Pushing Docker image to ECR"
-      - docker push ${REPOSITORY_URI}:${IMAGE_TAG}
-      - echo "Writing imagedefinitions.json for ECS (optional)"
-      - printf '[{"name":"%s","imageUri":"%s"}]' ${CONTAINER_NAME} ${REPOSITORY_URI}:${IMAGE_TAG} > imagedefinitions.json
-      - echo "Image URI: ${REPOSITORY_URI}:${IMAGE_TAG}"
+      - echo Pushing the Docker image...
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - echo Writing imagedefinitions.json
+      - printf '[{"name":"%s","imageUri":"%s"}]' $CONTAINER_NAME $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
 
 artifacts:
   files:
