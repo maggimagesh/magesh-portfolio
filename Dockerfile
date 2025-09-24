@@ -23,6 +23,8 @@
     
     # Copy build output
     COPY --from=build /app/dist /usr/share/nginx/html
+    # Ensure resume.json is present even if build cache was stale
+    COPY --from=build /app/public/resume.json /usr/share/nginx/html/resume.json
     
     # Expose port 80
     EXPOSE 80

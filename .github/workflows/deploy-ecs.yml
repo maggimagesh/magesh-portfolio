@@ -40,3 +40,4 @@ jobs:
           service: magesh-portfolio-task-service-wiydoql4
           cluster: magesh-portfolio-cluster-2
           wait-for-service-stability: true
+          force-new-deployment: true

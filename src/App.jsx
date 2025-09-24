@@ -14,7 +14,8 @@ function useResume() {
     else root.classList.remove('dark')
   }, [])
   React.useEffect(() => {
-    fetch('./resume.json')
+    const resumeUrl = `${import.meta.env.BASE_URL}resume.json`
+    fetch(resumeUrl)
       .then((r) => r.json())
       .then(setData)
       .catch((e) => setError(e))
