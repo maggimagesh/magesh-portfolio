@@ -57,8 +57,7 @@
       },
       "scripts": {
             "dev": "next dev",
-            "build": "next build && npm run postbuild",
-            "postbuild": "rm -rf dist && mkdir -p dist && cp -r .next/* dist/",
+            "build": "next build",
             "start": "next start",
             "lint": "next lint"
       }
