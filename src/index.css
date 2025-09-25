@@ -31,6 +31,15 @@ body {
   z-index: 100;
 }
 
+/* Improve text rendering and mobile tap targets */
+html { -webkit-text-size-adjust: 100%; }
+button, a { -webkit-tap-highlight-color: transparent; }
+
+/* On very small screens, slightly reduce base font-size for better fit */
+@media (max-width: 360px) {
+  :root { font-size: 15px; }
+}
+
 .fade-in {
   opacity: 0;
   transform: translateY(12px);
