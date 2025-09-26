@@ -21,6 +21,8 @@ import {
   AlertCircle
 } from "lucide-react";
 
+type FieldName = 'firstName' | 'lastName' | 'email' | 'subject' | 'message';
+
 export function ContactSection() {
   const [formData, setFormData] = useState({
     firstName: '',
@@ -32,19 +34,84 @@ export function ContactSection() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null); // 'success', 'error', or null
+  const [errors, setErrors] = useState<Record<FieldName, string>>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    subject: '',
+    message: ''
+  });
+  const [touched, setTouched] = useState<Record<FieldName, boolean>>({
+    firstName: false,
+    lastName: false,
+    email: false,
+    subject: false,
+    message: false
+  });
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target as { name: string; value: string };
+    const fieldName = name as FieldName;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [fieldName]: value
     }));
+    // Live-validate when a field has been touched
+    if (touched[fieldName]) {
+      const error = validateField(fieldName, value);
+      setErrors(prev => ({ ...prev, [fieldName]: error }));
+    }
+  };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target as { name: string; value: string };
+    const fieldName = name as FieldName;
+    setTouched(prev => ({ ...prev, [fieldName]: true }));
+    const error = validateField(fieldName, value);
+    setErrors(prev => ({ ...prev, [fieldName]: error }));
+  };
+
+  const validateField = (name: FieldName, value: string) => {
+    const trimmed = (value || '').trim();
+    switch (name) {
+      case 'firstName':
+      case 'lastName':
+      case 'subject':
+      case 'message':
+        return trimmed ? '' : 'This field is required.';
+      case 'email':
+        if (!trimmed) return 'Email is required.';
+        // Simple email validation
+        return /[^\s@]+@[^\s@]+\.[^\s@]+/.test(trimmed) ? '' : 'Enter a valid email address.';
+      default:
+        return '';
+    }
+  };
+
+  const validateAll = () => {
+    const nextErrors = {
+      firstName: validateField('firstName', formData.firstName),
+      lastName: validateField('lastName', formData.lastName),
+      email: validateField('email', formData.email),
+      subject: validateField('subject', formData.subject),
+      message: validateField('message', formData.message)
+    };
+    setErrors(nextErrors);
+    return Object.values(nextErrors).every(v => !v);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
     setSubmitStatus(null);
+
+    // Validate client-side and show themed inline errors
+    const isValid = validateAll();
+    setTouched({ firstName: true, lastName: true, email: true, subject: true, message: true });
+    if (!isValid) {
+      return; // Do not submit
+    }
+
+    setIsSubmitting(true);
 
     try {
       const response = await fetch('/api/contact', {
@@ -65,6 +132,8 @@ export function ContactSection() {
           subject: '',
           message: ''
         });
+        setErrors({ firstName: '', lastName: '', email: '', subject: '', message: '' });
+        setTouched({ firstName: false, lastName: false, email: false, subject: false, message: false });
       } else {
         setSubmitStatus('error');
       }
@@ -199,7 +268,7 @@ export function ContactSection() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <form onSubmit={handleSubmit}>
+                    <form onSubmit={handleSubmit} noValidate>
                       <div className="grid grid-cols-2 gap-4">
                         <motion.div 
                           initial={{ opacity: 0, y: 20 }}
@@ -213,10 +282,18 @@ export function ContactSection() {
                             name="firstName"
                             value={formData.firstName}
                             onChange={handleInputChange}
+                            onBlur={handleBlur}
                             placeholder="First Name" 
                             required
+                            aria-invalid={Boolean(touched.firstName && errors.firstName) || undefined}
                             className="bg-white/5 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-400 focus:ring-purple-400/20"
                           />
+                          {touched.firstName && errors.firstName ? (
+                            <div className="mt-1 flex items-center gap-2 text-sm text-white bg-gradient-to-r from-red-500/10 to-pink-500/10 border border-red-400/20 rounded-md px-3 py-2">
+                              <AlertCircle className="h-4 w-4 text-white" />
+                              <span>{errors.firstName}</span>
+                            </div>
+                          ) : null}
                         </motion.div>
                         <motion.div 
                           initial={{ opacity: 0, y: 20 }}
@@ -230,10 +307,18 @@ export function ContactSection() {
                             name="lastName"
                             value={formData.lastName}
                             onChange={handleInputChange}
+                            onBlur={handleBlur}
                             placeholder="Last Name" 
                             required
+                            aria-invalid={Boolean(touched.lastName && errors.lastName) || undefined}
                             className="bg-white/5 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-400 focus:ring-purple-400/20"
                           />
+                          {touched.lastName && errors.lastName ? (
+                            <div className="mt-1 flex items-center gap-2 text-sm text-white bg-gradient-to-r from-red-500/10 to-pink-500/10 border border-red-400/20 rounded-md px-3 py-2">
+                              <AlertCircle className="h-4 w-4 text-white" />
+                              <span>{errors.lastName}</span>
+                            </div>
+                          ) : null}
                         </motion.div>
                       </div>
                       
@@ -250,10 +335,18 @@ export function ContactSection() {
                           type="email"
                           value={formData.email}
                           onChange={handleInputChange}
+                          onBlur={handleBlur}
                           placeholder="your.email@company.com" 
                           required
+                          aria-invalid={Boolean(touched.email && errors.email) || undefined}
                           className="bg-white/5 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-400 focus:ring-purple-400/20"
                         />
+                        {touched.email && errors.email ? (
+                          <div className="mt-1 flex items-center gap-2 text-sm text-white bg-gradient-to-r from-red-500/10 to-pink-500/10 border border-red-400/20 rounded-md px-3 py-2">
+                            <AlertCircle className="h-4 w-4 text-white" />
+                            <span>{errors.email}</span>
+                          </div>
+                        ) : null}
                       </motion.div>
 
                       <motion.div 
@@ -287,10 +380,18 @@ export function ContactSection() {
                           type="text"
                           value={formData.subject}
                           onChange={handleInputChange}
+                          onBlur={handleBlur}
                           placeholder="Position Inquiry" 
                           required
+                          aria-invalid={Boolean(touched.subject && errors.subject) || undefined}
                           className="bg-white/5 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-400 focus:ring-purple-400/20"
                         />
+                        {touched.subject && errors.subject ? (
+                          <div className="mt-1 flex items-center gap-2 text-sm text-white bg-gradient-to-r from-red-500/10 to-pink-500/10 border border-red-400/20 rounded-md px-3 py-2">
+                            <AlertCircle className="h-4 w-4 text-white" />
+                            <span>{errors.subject}</span>
+                          </div>
+                        ) : null}
                       </motion.div>
                       
                       <motion.div 
@@ -305,12 +406,20 @@ export function ContactSection() {
                           name="message"
                           value={formData.message}
                           onChange={handleInputChange}
+                          onBlur={handleBlur}
                           placeholder="Tell me about the role and how I can help..."
                           rows={4}
                           required
+                          aria-invalid={Boolean(touched.message && errors.message) || undefined}
                           className="bg-white/5 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-400 focus:ring-purple-400/20 resize-none min-h-[100px] max-h-[200px] overflow-y-auto w-full rounded-md border px-3 py-2 text-base transition-[color,box-shadow] outline-none focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
                           style={{ height: '100px', minHeight: '100px', maxHeight: '200px' }}
                         />
+                        {touched.message && errors.message ? (
+                          <div className="mt-1 flex items-start gap-2 text-sm text-white bg-gradient-to-r from-red-500/10 to-pink-500/10 border border-red-400/20 rounded-md px-3 py-2">
+                            <AlertCircle className="mt-0.5 h-4 w-4 text-white" />
+                            <span>{errors.message}</span>
+                          </div>
+                        ) : null}
                       </motion.div>
                       
                       {/* Status Messages */}

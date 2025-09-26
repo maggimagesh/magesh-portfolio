@@ -122,9 +122,6 @@ export function SkillsSection() {
                     >
                       <div className="flex justify-between items-center">
                         <span className="font-medium text-left flex-1">{skill.name}</span>
-                        <Badge variant="secondary" className="text-xs font-bold ml-2">
-                          {skill.level}%
-                        </Badge>
                       </div>
                       <div className="relative">
                         <Progress value={skill.level} className="h-3 bg-gray-200" />

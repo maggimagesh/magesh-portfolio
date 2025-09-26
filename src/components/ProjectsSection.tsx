@@ -37,8 +37,8 @@ export function ProjectsSection() {
             Projects
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-            Key testing projects that demonstrate expertise in automation, 
-            strategy development, and quality improvement initiatives.
+            Key projects showcasing expertise in automation, development, testing, 
+            and quality improvement initiatives.
           </p>
         </motion.div>
 
