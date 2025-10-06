@@ -137,6 +137,13 @@ export const resume: Resume = {
       status: "Live",
       description: "Career Spider helps discover and track roles with AI-assisted search and filtering.",
       tech: ["Next.js", "TypeScript", "TailwindCSS", "React JS"]
+    },
+    {
+      name: "Angaadi – Automation Testing Practice Platform",
+      link: "https://angaadi.vercel.app",
+      status: "Under Development",
+      description: "Angaadi is a demo e‑commerce website built for automation testers to practice and refine their testing skills. Inspired by real-world online store workflows, it includes features like product listings, advanced search, shopping cart management, checkout processes, and order tracking. Designed from tester feedback, it provides realistic scenarios for validating UI interactions, backend processes, and API calls. The platform is regularly updated to reflect modern e‑commerce challenges, making it ideal for end‑to‑end automation practice with tools such as Playwright, Selenium, and Cypress.",
+      tech: ["Next.js", "TypeScript", "React", "Vite", "CSS"]
     }
   ]
 };
