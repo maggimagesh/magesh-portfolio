@@ -73,16 +73,16 @@ export const resume: Resume = {
     {
       company: "Zoho Corporation",
       location: "Chennai",
-      role: "Quality Analyst",
+      role: "Member Technical Staff - QA",
       period: "Dec 2025 - Present",
       logo: "/logos/zoho-logo.png",
       summary:
-        "Quality Analyst testing crawler and Data as a Service applications that help businesses collect web content and access usable data. Perform functional, API and regression testing to validate crawling behaviour, data accuracy and reliable delivery.",
+        "I work as a Member Technical Staff - QA, testing Crawler as a Service (CaaS) and Data as a Service (DaaS) applications that help businesses collect web content and access usable data. I primarily use Java and TestNG for testing, PostgreSQL for database validation, and Playwright with TypeScript for small feature testing.",
       highlights: [
-        "Crawler Application: Testing a web-crawling platform that helps businesses automatically discover and collect website content, reducing manual data collection. Validate URL filtering, crawl depth and limits, dynamic page rendering, session handling and domain/path whitelist and blacklist rules to ensure accurate content extraction within the configured scope.",
-        "Data as a Service (DaaS) Application: Testing an application that makes collected web data available for business use through APIs, supporting downstream analysis and integrations. Validate API responses, extracted data completeness, database consistency and data delivery flows to ensure dependable results for consuming applications.",
+        "Crawler as a Service (CaaS): I test a service that helps businesses automatically discover and collect website content, reducing manual data collection. I validate URL filtering, crawl depth and limits, dynamic page rendering, session handling, and domain/path whitelist and blacklist rules to ensure accurate content extraction within the configured scope.",
+        "Data as a Service (DaaS): I test a service that makes collected web data available through APIs for business analysis and integrations. I validate API responses, extracted data completeness, database consistency and data delivery flows to ensure dependable results for consuming applications.",
       ],
-      skills: ["Playwright", "TypeScript", "Postman", "PostgreSQL"],
+      skills: ["Java", "TestNG", "PostgreSQL", "Playwright", "TypeScript"],
     },
     {
       company: "Nibav Lifts Pvt Ltd",
