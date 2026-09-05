@@ -71,14 +71,18 @@ export const resume: Resume = {
     "Software Quality Engineer with 6 years of experience in web UI and API testing, specialising in Playwright (TypeScript), BDD (Cucumber), Java (Selenium), Jenkins, Postman and Rest Assured. Skilled at building robust, scalable automation frameworks using the Page Object Model (POM) to enhance efficiency and maintainability. Proficient in CI/CD integration, MySQL database testing, SDLC processes and diverse testing methodologies to reduce manual effort and improve coverage.",
   experience: [
     {
-      company: "Zoho",
+      company: "Zoho Corporation",
       location: "Chennai",
-      role: "Quality Analyst",
+      role: "Member Technical Staff - QA",
       period: "Dec 2025 - Present",
       logo: "/logos/zoho-logo.png",
-      summary: "Upcoming role as a Quality Analyst.",
-      highlights: [],
-      skills: [],
+      summary:
+        "I work as a Member Technical Staff - QA, testing Crawler as a Service (CaaS) and Data as a Service (DaaS) applications that help businesses collect web content and access usable data. I primarily use Java and TestNG for testing, PostgreSQL for database validation, and Playwright with TypeScript for small feature testing.",
+      highlights: [
+        "Crawler as a Service (CaaS): I test a service that helps businesses automatically discover and collect website content, reducing manual data collection. I validate URL filtering, crawl depth and limits, dynamic page rendering, session handling, and domain/path whitelist and blacklist rules to ensure accurate content extraction within the configured scope.",
+        "Data as a Service (DaaS): I test a service that makes collected web data available through APIs for business analysis and integrations. I validate API responses, extracted data completeness, database consistency and data delivery flows to ensure dependable results for consuming applications.",
+      ],
+      skills: ["Java", "TestNG", "PostgreSQL", "Playwright", "TypeScript"],
     },
     {
       company: "Nibav Lifts Pvt Ltd",
