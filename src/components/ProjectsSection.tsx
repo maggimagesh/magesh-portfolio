@@ -8,7 +8,7 @@ const BURSTS = ["THWIP!", "POW!", "ZAP!", "BAM!"];
 
 export function ProjectsSection() {
   return (
-    <section id="projects" className="sp-section sp-section-paper">
+    <section data-paper id="projects" className="sp-section sp-section-paper">
       <div className="sp-halftone" aria-hidden="true" />
       <WebCorner corner="tr" className="sp-section-web sp-section-web-dark" />
 

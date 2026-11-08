@@ -53,7 +53,7 @@ const skillCategories = [
 
 export function SkillsSection() {
   return (
-    <section id="skills" className="sp-section sp-section-red">
+    <section data-paper id="skills" className="sp-section sp-section-red">
       <div className="sp-halftone sp-halftone-light" aria-hidden="true" />
       <WebCorner corner="tr" className="sp-section-web" />
 

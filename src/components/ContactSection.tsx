@@ -189,7 +189,7 @@ export function ContactSection() {
   ].filter((l) => l.href);
 
   return (
-    <section id="contact" className="sp-section sp-section-night sp-contact">
+    <section data-paper id="contact" className="sp-section sp-section-night sp-contact">
       <div className="sp-stars" aria-hidden="true" />
       <div className="sp-signal" aria-hidden="true" />
       <WebCorner corner="tl" className="sp-section-web sp-section-web-light" />

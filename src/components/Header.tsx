@@ -3,16 +3,13 @@ import { createPortal } from "react-dom";
 import { Github, Linkedin, Mail, X } from "lucide-react";
 import resume from "../data/resume";
 import { ImageWithFallback } from "./fallback/ImageWithFallback";
+import { scrollToSection } from "./spidey/Spidey";
 import { motion, AnimatePresence } from "motion/react";
 
 export function Header() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [zoom, setZoom] = useState(1);
 
-  const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    element?.scrollIntoView({ behavior: "smooth" });
-  };
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {

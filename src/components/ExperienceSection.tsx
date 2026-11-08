@@ -7,7 +7,7 @@ import { SectionHeading, SpiderGlyph, WebCorner } from "./spidey/Spidey";
 
 export function ExperienceSection() {
   return (
-    <section id="experience" className="sp-section sp-section-night">
+    <section data-paper id="experience" className="sp-section sp-section-night">
       <div className="sp-stars" aria-hidden="true" />
       <WebCorner corner="tl" className="sp-section-web sp-section-web-light" />
       <WebCorner corner="br" className="sp-section-web sp-section-web-light" />

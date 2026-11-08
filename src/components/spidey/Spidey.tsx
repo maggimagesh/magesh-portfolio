@@ -166,33 +166,137 @@ export function WebShooter() {
   );
 }
 
-/** A spider that descends on its thread as you scroll (doubles as a progress indicator). */
-export function HangingSpider() {
-  const [progress, setProgress] = useState(0);
+/**
+ * Scrolls to a section's natural (un-stuck) position. Needed because the
+ * paper-stack sections are sticky: once pinned, scrollIntoView thinks they
+ * are already on screen and does nothing.
+ */
+export function scrollToSection(id: string) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const prevPosition = el.style.position;
+  el.style.position = "static";
+  const top = el.getBoundingClientRect().top + window.scrollY;
+  el.style.position = prevPosition;
+  const header = document.querySelector(".sp-header")?.getBoundingClientRect().height ?? 0;
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  window.scrollTo({ top: Math.max(0, top - header), behavior: reduce ? "auto" : "smooth" });
+}
+
+/**
+ * Paper-stack scrolling: every `[data-paper]` section is sticky, so the one
+ * you've read stays pinned while the next slides over it like a new sheet.
+ * A spider in the top-left corner shoots a web line onto the incoming sheet
+ * and reels it up as you scroll.
+ */
+export function PaperStack() {
+  const rigRef = useRef<HTMLDivElement>(null);
+  const threadRef = useRef<HTMLDivElement>(null);
+  const patchRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
+    const sections = Array.from(document.querySelectorAll<HTMLElement>("[data-paper]"));
+    const rig = rigRef.current;
+    const thread = threadRef.current;
+    const patch = patchRef.current;
+    if (!sections.length || !rig || !thread || !patch) return;
+
+    let stickTops: number[] = [];
     let raf = 0;
+    let idleTimer = 0;
+    let lastLen = -1;
+
+    const headerHeight = () =>
+      document.querySelector(".sp-header")?.getBoundingClientRect().height ?? 0;
+
     const update = () => {
       raf = 0;
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      setProgress(max > 0 ? Math.min(1, window.scrollY / max) : 0);
+      const vh = window.innerHeight;
+      const rects = sections.map((s) => s.getBoundingClientRect());
+
+      // Find the sheet currently travelling up (not yet pinned, but on screen).
+      let incoming = -1;
+      for (let i = 1; i < sections.length; i++) {
+        const top = rects[i].top;
+        if (top > stickTops[i] + 0.5 && top < vh - 1) {
+          incoming = i;
+          break;
+        }
+      }
+
+      // Darken each sheet as the next one covers it.
+      sections.forEach((s, i) => {
+        const next = rects[i + 1];
+        let dim = 0;
+        if (next) {
+          const travel = vh - stickTops[i + 1];
+          dim = travel > 0 ? Math.min(1, Math.max(0, (vh - next.top) / travel)) : 0;
+        }
+        s.style.setProperty("--paper-dim", (dim * 0.45).toFixed(3));
+      });
+
+      const anchorY = rig.getBoundingClientRect().bottom - 6;
+      if (incoming === -1) {
+        rig.classList.remove("is-pulling");
+        thread.style.height = "0px";
+        lastLen = 0;
+        return;
+      }
+      const len = Math.max(0, rects[incoming].top - anchorY);
+      rig.classList.add("is-pulling");
+      thread.style.height = `${len}px`;
+      patch.style.transform = `translate(-50%, ${len}px)`;
+
+      if (lastLen >= 0 && Math.abs(len - lastLen) > 0.5) {
+        rig.classList.add("is-reeling");
+        window.clearTimeout(idleTimer);
+        idleTimer = window.setTimeout(() => rig.classList.remove("is-reeling"), 160);
+      }
+      lastLen = len;
     };
-    const onScroll = () => {
+
+    const schedule = () => {
       if (!raf) raf = requestAnimationFrame(update);
     };
-    update();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
+
+    const measure = () => {
+      const header = headerHeight();
+      const vh = window.innerHeight;
+      stickTops = sections.map((s, i) => {
+        // Short sheets pin under the header; tall ones pin once their bottom
+        // reaches the bottom of the screen, so nothing is covered unread.
+        const t = Math.min(header, vh - s.offsetHeight);
+        s.style.top = `${Math.round(t)}px`;
+        s.style.zIndex = String(i + 1);
+        return Math.round(t);
+      });
+      schedule();
+    };
+
+    const ro = new ResizeObserver(measure);
+    sections.forEach((s) => ro.observe(s));
+    measure();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", measure);
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      ro.disconnect();
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", measure);
+      window.clearTimeout(idleTimer);
       if (raf) cancelAnimationFrame(raf);
     };
   }, []);
 
   return (
-    <div className="sp-hanger" aria-hidden="true" style={{ ["--drop" as string]: progress }}>
-      <div className="sp-hanger-thread" />
-      <SpiderGlyph className="sp-hanger-spider" />
+    <div className="sp-puller" aria-hidden="true">
+      <div className="sp-puller-rig" ref={rigRef}>
+        <div className="sp-puller-anchor" />
+        <SpiderGlyph className="sp-puller-spider" />
+        <div className="sp-puller-thread" ref={threadRef} />
+        <div className="sp-puller-patch" ref={patchRef}>
+          <WebDisc className="sp-puller-web" />
+        </div>
+      </div>
     </div>
   );
 }

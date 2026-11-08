@@ -1075,7 +1075,131 @@ textarea.sp-input { resize: vertical; min-height: 120px; max-height: 260px; }
 .sp-footer-copy { margin: 0.8rem 0 0; font-size: 0.9rem; }
 .sp-footer-note { margin: 0.4rem 0 0; font-size: 0.75rem; color: #7f8bb3; }
 
-/* ---------- effects: web shooter + hanging spider ---------- */
+/* ---------- paper stack: each section slides over the last ---------- */
+
+.sp-app [data-paper] {
+  position: sticky;
+  top: var(--sp-header-h);
+}
+.sp-app [data-paper]::after {
+  /* shade that deepens as the next sheet covers this one */
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: #02040c;
+  opacity: var(--paper-dim, 0);
+  pointer-events: none;
+}
+.sp-app [data-paper] + [data-paper] {
+  border-radius: 26px 26px 0 0;
+  box-shadow:
+    0 -2px 0 rgba(11, 15, 26, 0.55),
+    0 -14px 28px rgba(2, 4, 12, 0.35);
+}
+.sp-app [data-paper] + [data-paper]::before {
+  /* subtle paper edge highlight */
+  content: "";
+  position: absolute;
+  left: 26px;
+  right: 26px;
+  top: 0;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.55);
+  z-index: 21;
+  pointer-events: none;
+}
+.sp-footer {
+  z-index: 30;
+}
+
+/* the spider that reels each new sheet in */
+.sp-puller {
+  position: fixed;
+  top: calc(var(--sp-header-h) + 6px);
+  left: clamp(4px, 1.6vw, 22px);
+  z-index: 45;
+  pointer-events: none;
+}
+.sp-puller-rig {
+  position: relative;
+  width: 34px;
+}
+.sp-puller-anchor {
+  /* the line the spider hangs from, up to the header */
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  width: 2px;
+  height: 10px;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.9);
+}
+.sp-puller-spider {
+  display: block;
+  width: 34px;
+  height: 42px;
+  color: var(--sp-ink);
+  filter: drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 1px #fff);
+  transform-origin: 50% 20%;
+  animation: sp-dangle 3.2s ease-in-out infinite;
+}
+.sp-puller-thread {
+  position: absolute;
+  left: 50%;
+  top: calc(100% - 6px);
+  width: 3px;
+  height: 0;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #fff, #e6eaf5);
+  box-shadow: 0 0 0 1px rgba(11, 15, 26, 0.6), 0 0 6px rgba(255, 255, 255, 0.6);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.sp-puller-patch {
+  position: absolute;
+  left: 50%;
+  top: calc(100% - 6px);
+  width: 0;
+  height: 0;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.sp-puller-web {
+  position: absolute;
+  left: -26px;
+  top: -16px;
+  width: 52px;
+  height: 52px;
+  color: #fff;
+  filter: drop-shadow(0 0 1px rgba(11, 15, 26, 1)) drop-shadow(1px 1px 0 rgba(11, 15, 26, 0.6));
+}
+.sp-puller-rig.is-pulling .sp-puller-thread,
+.sp-puller-rig.is-pulling .sp-puller-patch {
+  opacity: 1;
+}
+.sp-puller-rig.is-pulling .sp-puller-spider {
+  animation: none;
+  transform: rotate(0deg);
+}
+.sp-puller-rig.is-reeling .sp-puller-spider {
+  animation: sp-reel 0.18s linear infinite;
+}
+@keyframes sp-dangle {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+@keyframes sp-reel {
+  0% { transform: translateY(0) scaleX(1); }
+  50% { transform: translateY(-2px) scaleX(0.93); }
+  100% { transform: translateY(0) scaleX(1); }
+}
+@media (max-width: 640px) {
+  .sp-puller-rig { width: 26px; }
+  .sp-puller-spider { width: 26px; height: 32px; }
+}
+
+/* ---------- effects: web shooter ---------- */
 
 .sp-shots {
   position: fixed;
@@ -1121,44 +1245,10 @@ textarea.sp-input { resize: vertical; min-height: 120px; max-height: 260px; }
   100% { transform: translateY(-14px) scale(1); opacity: 0; }
 }
 
-.sp-hanger {
-  --drop: 0;
-  position: fixed;
-  top: var(--sp-header-h);
-  right: clamp(8px, 2vw, 28px);
-  z-index: 40;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  pointer-events: none;
-}
-.sp-hanger-thread {
-  width: 2px;
-  height: calc(20px + var(--drop) * (100vh - var(--sp-header-h) - 90px));
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(200, 205, 220, 0.9));
-  box-shadow: 0 0 0 1px rgba(11, 15, 26, 0.35);
-}
-.sp-hanger-spider {
-  width: 26px;
-  height: 32px;
-  margin-top: -4px;
-  color: var(--sp-ink);
-  filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff);
-  transform: rotate(180deg);
-  animation: sp-dangle 3s ease-in-out infinite;
-}
-@keyframes sp-dangle {
-  0%, 100% { transform: rotate(176deg); }
-  50% { transform: rotate(184deg); }
-}
-@media (max-width: 640px) {
-  .sp-hanger { display: none; }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .sp-burst-hero,
   .reveal-hint,
-  .sp-hanger-spider { animation: none; }
+  .sp-puller-spider { animation: none; }
   .reveal-real,
   .reveal-lens-ring { transition: none; }
 }

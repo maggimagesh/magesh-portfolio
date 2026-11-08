@@ -8,7 +8,7 @@ import { EducationSection } from "./components/EducationSection";
 import React from "react";
 import { motion } from "motion/react";
 import resume from "./data/resume";
-import { HangingSpider, SpiderGlyph, WebShooter, Skyline } from "./components/spidey/Spidey";
+import { PaperStack, SpiderGlyph, WebShooter, Skyline } from "./components/spidey/Spidey";
 
 export default function App() {
   return (
@@ -45,7 +45,7 @@ export default function App() {
         </motion.div>
       </footer>
 
-      <HangingSpider />
+      <PaperStack />
       <WebShooter />
     </div>
   );

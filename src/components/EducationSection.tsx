@@ -7,7 +7,7 @@ import { SectionHeading, WebCorner } from "./spidey/Spidey";
 
 export function EducationSection() {
   return (
-    <section id="education" className="sp-section sp-section-paper">
+    <section data-paper id="education" className="sp-section sp-section-paper">
       <div className="sp-halftone" aria-hidden="true" />
       <WebCorner corner="bl" className="sp-section-web sp-section-web-dark" />
 

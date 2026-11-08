@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { Download, ArrowRight, MousePointer2, Hand } from "lucide-react";
 import resume from "../data/resume";
-import { Skyline, SpiderGlyph, WebCorner } from "./spidey/Spidey";
+import { Skyline, SpiderGlyph, WebCorner, scrollToSection } from "./spidey/Spidey";
 
 const STATS = [
   { label: "Years on patrol", value: "6+" },
@@ -103,7 +103,7 @@ export function HeroSection() {
   const restName = rest.join(" ");
 
   return (
-    <section id="about" className="sp-hero">
+    <section data-paper id="about" className="sp-hero">
       <div className="sp-halftone" aria-hidden="true" />
       <WebCorner corner="tl" className="sp-hero-web" />
       <WebCorner corner="br" className="sp-hero-web sp-hero-web-red" />
@@ -141,9 +141,7 @@ export function HeroSection() {
             <button
               type="button"
               className="sp-btn sp-btn-red"
-              onClick={() =>
-                document.getElementById("projects")?.scrollIntoView({ behavior: "smooth" })
-              }
+              onClick={() => scrollToSection("projects")}
             >
               Explore Projects <ArrowRight size={18} />
             </button>
