@@ -12,7 +12,7 @@ const STATS = [
 ];
 
 /**
- * Portrait with a "hover to reveal" lens: the suited-up alter ego sits on top,
+ * Portrait with a "hover to reveal" lens: a comic-poster version sits on top,
  * and a circular lens that follows the pointer reveals the real photo.
  */
 function RevealPortrait() {
@@ -55,7 +55,7 @@ function RevealPortrait() {
 
   const revealed = active || pinned;
   const real = "/spidey/me-cutout.webp";
-  const suit = resume.personal.alterEgo ?? "/spidey/suit.webp";
+  const comic = resume.personal.alterEgo ?? "/spidey/comic.webp";
 
   return (
     <div
@@ -74,7 +74,7 @@ function RevealPortrait() {
         setPinned((p) => !p);
       }}
       role="img"
-      aria-label={`${resume.personal.name} in a bug-hunter hero suit — hover or tap to unmask`}
+      aria-label={`${resume.personal.name} as comic-book art — hover or tap to reveal the photo`}
     >
       <div className="reveal-sky" aria-hidden="true">
         <div className="reveal-moon" />
@@ -82,7 +82,7 @@ function RevealPortrait() {
         <WebCorner corner="tr" className="reveal-web" />
       </div>
 
-      <img className="reveal-img reveal-suit" src={suit} alt="" draggable={false} />
+      <img className="reveal-img reveal-suit" src={comic} alt="" draggable={false} />
       <div className="reveal-real">
         <img className="reveal-img" src={real} alt="" draggable={false} />
       </div>
@@ -91,8 +91,8 @@ function RevealPortrait() {
       <div className="reveal-hint" aria-hidden="true">
         <MousePointer2 className="reveal-hint-icon reveal-hint-mouse" />
         <Hand className="reveal-hint-icon reveal-hint-touch" />
-        <span className="reveal-hint-mouse">Hover to unmask</span>
-        <span className="reveal-hint-touch">Touch &amp; drag to unmask</span>
+        <span className="reveal-hint-mouse">Hover to reveal</span>
+        <span className="reveal-hint-touch">Touch &amp; drag to reveal</span>
       </div>
     </div>
   );
