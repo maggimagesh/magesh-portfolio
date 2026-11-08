@@ -1,5 +1,5 @@
 """
-Generates the hero's spider-suit alter ego and a background-free cutout from
+Generates the hero's "bug hunter" suit alter ego (an original design) and a background-free cutout from
 public/logos/me.png. Tuned for that photo (flat lavender background, subject
 centred); the coordinates below (head ellipse, panel polygon, eyes, emblem)
 need adjusting if the photo changes.
@@ -50,100 +50,98 @@ body[:300, :] = 0
 body[300:350, :] *= (np.arange(300, 350)[:, None] - 300) / 50   # fade into neck
 sil = np.maximum(body, np.array(head) / 255)
 
-# ---------- 3. red / blue panels ----------
-red = Image.new('L', (W, H), 0)
-rd = ImageDraw.Draw(red)
-rd.ellipse([HC[0] - HRX - 4, HC[1] - HRY - 4, HC[0] + HRX + 4, HC[1] + HRY + 4], fill=255)
-rd.rectangle([390, 280, 520, 360], fill=255)
-# chest + shoulders + upper arms + centre torso down to a belt
-rd.polygon([(260, 360), (740, 360), (760, 470), (650, 520), (610, 600), (590, 860),
-            (500, 900), (405, 860), (390, 600), (350, 520), (250, 470)], fill=255)
-# gloves (hands)
-red = red.filter(ImageFilter.GaussianBlur(1.5))
-redm = np.array(red).astype(float) / 255
+# ---------- 3. panels: an original "bug hunter" armour suit ----------
+# Charcoal base with red accent panels: a shoulder yoke that drops to a V at
+# the sternum, side stripes down the torso, and a crest over the mask.
+accent = Image.new('L', (W, H), 0)
+ad = ImageDraw.Draw(accent)
+ad.polygon([(262, 372), (740, 372), (752, 452), (612, 470), (500, 600), (388, 470), (250, 452)], fill=255)
+ad.polygon([(330, 540), (372, 530), (392, 880), (350, 890)], fill=255)      # left torso stripe
+ad.polygon([(628, 530), (670, 540), (650, 890), (608, 880)], fill=255)      # right torso stripe
+ad.polygon([(443, 78), (476, 84), (452, 182), (434, 182), (410, 84)], fill=255)  # mask crest
+accent = accent.filter(ImageFilter.GaussianBlur(1.5))
+accm = np.array(accent).astype(float) / 255
 
 # shading from the original photo
 g = np.array(src.convert('L')).astype(float) / 255
 g = np.clip((g - g[person].mean()) * 1.25 + 0.5, 0, 1)
-shade = (0.42 + 0.85 * g)[..., None]
-RED = np.array([206, 22, 38]); BLUE = np.array([28, 58, 140])
-col = (RED * redm[..., None] + BLUE * (1 - redm[..., None])) * shade
+# the helmet is a hard shell: blur away facial features inside the head
+gb = np.array(Image.fromarray((g * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(14))).astype(float) / 255
+hm = np.array(head).astype(float) / 255
+hm[300:, :] = 0
+g = g * (1 - hm) + (0.35 + 0.5 * gb) * hm
+shade = (0.45 + 0.9 * g)[..., None]
+BASE = np.array([40, 44, 58]); ACCENT = np.array([214, 30, 45])
+col = (ACCENT * accm[..., None] + BASE * (1 - accm[..., None])) * shade
 col = np.clip(col, 0, 255)
 
 suit = Image.fromarray(col.astype(np.uint8)).convert('RGBA')
 
 # ---------- 4. line art (drawn at 2x, then downsampled) ----------
-L = Image.new('L', (W * S, H * S), 0)
-ld = ImageDraw.Draw(L)
 def P(x, y): return (x * S, y * S)
 
-def web(cx, cy, n, rings, rmax, w, start=0.0):
-    angs = [start + i * 2 * math.pi / n for i in range(n)]
-    for a in angs:
-        ld.line([P(cx, cy), P(cx + math.cos(a) * rmax, cy + math.sin(a) * rmax)], fill=255, width=w * S)
-    for r in rings:
-        pts = []
-        for i, a in enumerate(angs + [angs[0] + 2 * math.pi]):
-            pts.append((cx + math.cos(a) * r, cy + math.sin(a) * r))
-        for (x1, y1), (x2, y2) in zip(pts, pts[1:]):
-            # sagging strand toward the centre
-            mx, my = (x1 + x2) / 2, (y1 + y2) / 2
-            sx, sy = cx + (mx - cx) * 0.9, cy + (my - cy) * 0.9
-            seg = []
-            for t in np.linspace(0, 1, 10):
-                bx = (1 - t) ** 2 * x1 + 2 * (1 - t) * t * sx + t ** 2 * x2
-                by = (1 - t) ** 2 * y1 + 2 * (1 - t) * t * sy + t ** 2 * y2
-                seg.append(P(bx, by))
-            ld.line(seg, fill=255, width=w * S)
+# hexagonal armour plating, faint, on the charcoal panels
+HX = Image.new('L', (W * S, H * S), 0)
+hx = ImageDraw.Draw(HX)
+R = 15
+for row in range(0, int(H / (R * 1.5)) + 2):
+    for colx in range(0, int(W / (R * 1.732)) + 2):
+        cx = colx * R * 1.732 + (row % 2) * R * 0.866
+        cy = row * R * 1.5
+        pts = [P(cx + R * math.cos(math.radians(60 * k + 30)), cy + R * math.sin(math.radians(60 * k + 30))) for k in range(7)]
+        hx.line(pts, fill=255, width=2 * S)
+hexes = np.array(HX.resize((W, H), Image.LANCZOS)).astype(float) / 255 * (1 - accm)
 
-# mask webbing radiating from between the eyes, chest webbing from the emblem
-web(442, 222, 16, [30, 62, 98, 140], 200, 2, start=0.1)
-web(495, 520, 18, [55, 110, 170, 235, 300, 370], 480, 2)
-lines = L.resize((W, H), Image.LANCZOS)
-lines_np = np.array(lines).astype(float) / 255 * redm   # webbing only on red panels
-
-# seams between red and blue panels
-edge = red.filter(ImageFilter.FIND_EDGES).filter(ImageFilter.MaxFilter(3))
+# panel seams
+edge = accent.filter(ImageFilter.FIND_EDGES).filter(ImageFilter.MaxFilter(3))
 edge_np = np.clip(np.array(edge).astype(float) / 255 * 2.2, 0, 1)
 
-ink = np.clip(np.maximum(lines_np * 0.95, edge_np), 0, 1)
 arr = np.array(suit).astype(float)
-arr[..., :3] *= (1 - ink[..., None] * 0.92)
+arr[..., :3] += hexes[..., None] * 26                      # lighter plating lines
+arr[..., :3] *= (1 - edge_np[..., None] * 0.9)              # dark seams
+arr[..., :3] = np.clip(arr[..., :3], 0, 255)
 arr[..., 3] = sil * 255
 suit = Image.fromarray(arr.astype(np.uint8))
 
-# ---------- 5. chest emblem + eye lenses ----------
+# ---------- 5. visor + "bug hunter" chest emblem ----------
 O = Image.new('RGBA', (W * S, H * S), (0, 0, 0, 0))
 od = ImageDraw.Draw(O)
-ex, ey = 495, 515
-# original eight-legged spider glyph
-od.ellipse([P(ex - 15, ey - 32), P(ex + 15, ey + 2)], fill=(10, 10, 14, 255))
-od.ellipse([P(ex - 20, ey - 2), P(ex + 20, ey + 52)], fill=(10, 10, 14, 255))
-od.ellipse([P(ex - 9, ey - 50), P(ex + 9, ey - 30)], fill=(10, 10, 14, 255))
+
+# one wraparound visor across both eyes, dipping slightly at the nose
+def visor(inset):
+    top, bot = [], []
+    for i in range(41):
+        t = i / 40
+        x = 356 + inset + (530 - 2 * inset - 356) * t
+        u = (t - 0.5) * 2
+        yt = 182 + inset + 10 * u * u + 6 * math.exp(-(u * 4) ** 2)
+        yb = 226 - inset - 4 * u * u + 8 * math.exp(-(u * 4) ** 2) * 0 - 10 * math.exp(-(u * 3) ** 2) * -0.6
+        top.append(P(x, yt)); bot.append(P(x, yb))
+    return top + bot[::-1]
+od.polygon(visor(0), fill=(12, 14, 20, 255))
+od.polygon(visor(5), fill=(40, 200, 235, 255))
+glow = Image.new('RGBA', (W * S, H * S), (0, 0, 0, 0))
+ImageDraw.Draw(glow).polygon(visor(9), fill=(190, 250, 255, 170))
+glow = glow.filter(ImageFilter.GaussianBlur(10 * S))
+O = Image.alpha_composite(O, glow)
+od = ImageDraw.Draw(O)
+od.line([P(372, 196), P(420, 192)], fill=(255, 255, 255, 220), width=3 * S)   # glint
+
+# target ring with a beetle inside: the QA bug hunter's mark
+ex, ey, er = 500, 548, 46
+od.ellipse([P(ex - er - 6, ey - er - 6), P(ex + er + 6, ey + er + 6)], fill=(12, 14, 20, 255))
+od.ellipse([P(ex - er, ey - er), P(ex + er, ey + er)], outline=(245, 245, 248, 255), width=5 * S)
+for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0)):
+    od.line([P(ex + dx * (er - 12), ey + dy * (er - 12)), P(ex + dx * (er + 10), ey + dy * (er + 10))],
+            fill=(245, 245, 248, 255), width=5 * S)
+bug = (214, 30, 45, 255)
+od.ellipse([P(ex - 14, ey - 12), P(ex + 14, ey + 24)], fill=bug)          # shell
+od.ellipse([P(ex - 8, ey - 24), P(ex + 8, ey - 10)], fill=bug)            # head
+od.line([P(ex, ey - 10), P(ex, ey + 23)], fill=(12, 14, 20, 255), width=2 * S)
 for side in (-1, 1):
-    for (a, b, c) in [((14, -22), (48, -52), (58, -86)), ((15, -12), (58, -26), (76, -44)),
-                      ((15, 6), (62, 20), (78, 52)), ((14, 18), (46, 46), (54, 92))]:
-        pts = [P(ex + side * a[0], ey + a[1]), P(ex + side * b[0], ey + b[1]), P(ex + side * c[0], ey + c[1])]
-        od.line(pts, fill=(10, 10, 14, 255), width=6 * S, joint='curve')
-
-def lens(cx, cy, w, h, rot, mirror):
-    pts = []
-    for i in range(80):
-        t = 2 * math.pi * i / 80
-        x = math.cos(t) * w / 2
-        y = math.sin(t) * h / 2
-        # teardrop: pointier toward the nose, fuller at the temple
-        x *= 1 + 0.18 * math.cos(t) * mirror
-        y *= 1 - 0.35 * max(0, -math.cos(t) * mirror)
-        r = math.radians(rot)
-        pts.append((cx + x * math.cos(r) - y * math.sin(r), cy + x * math.sin(r) + y * math.cos(r)))
-    return [P(x, y) for x, y in pts]
-
-for cx, rot, m in ((401, -22, -1), (485, 22, 1)):
-    poly = lens(cx, 202, 84, 58, rot, m)
-    od.polygon(poly, fill=(14, 14, 18, 255))
-    inner = lens(cx, 202, 66, 41, rot, m)
-    od.polygon(inner, fill=(248, 248, 250, 255))
+    for y0, y1 in ((-4, -12), (6, 6), (16, 26)):
+        od.line([P(ex + side * 12, ey + y0), P(ex + side * 24, ey + y1)], fill=bug, width=3 * S)
+    od.line([P(ex + side * 4, ey - 22), P(ex + side * 12, ey - 32)], fill=bug, width=2 * S)  # antennae
 O = O.resize((W, H), Image.LANCZOS)
 suit = Image.alpha_composite(suit, O)
 

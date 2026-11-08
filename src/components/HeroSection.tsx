@@ -74,7 +74,7 @@ function RevealPortrait() {
         setPinned((p) => !p);
       }}
       role="img"
-      aria-label={`${resume.personal.name} in a spider suit — hover or tap to unmask`}
+      aria-label={`${resume.personal.name} in a bug-hunter hero suit — hover or tap to unmask`}
     >
       <div className="reveal-sky" aria-hidden="true">
         <div className="reveal-moon" />

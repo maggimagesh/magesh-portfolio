@@ -183,76 +183,180 @@ export function scrollToSection(id: string) {
   window.scrollTo({ top: Math.max(0, top - header), behavior: reduce ? "auto" : "smooth" });
 }
 
+/* ------------------------------------------------------------------
+   Paper stack + the spider that reels each sheet in
+   ------------------------------------------------------------------ */
+
+// Spider rig geometry, in SVG viewBox units (viewBox "-60 -50 120 140").
+// The spider hangs head-down, like a real spider hauling prey up its line.
+const VB = { x: -60, y: -50, w: 120, h: 140 };
+const MOUTH = { x: 0, y: 14 }; // where the line leaves the spider
+const FRONT = { sx: 6, sy: 11, l1: 30, l2: 34 }; // shoulder + segment lengths
+const REACH_HIGH = 22; // tip height at the end of a pull (near the jaws)
+const REACH_LOW = 76; // tip height when reaching down to grab the line
+const STROKE = REACH_LOW - REACH_HIGH; // line travel per pull, in viewBox units
+const BACK_LEGS = [
+  // [shoulder x, shoulder y, knee angle°, tip angle°, l1, l2] for the right side;
+  // mirrored for the left. They grip the silk above and splay outward.
+  [7, 4, -28, 8, 24, 28],
+  [8, -1, -58, -18, 24, 30],
+  [7, -6, -88, -52, 22, 30],
+] as const;
+
+type Pt = { x: number; y: number };
+
+/** Two-segment inverse kinematics; the knee bends away from the body. */
+function solveKnee(s: Pt, t: Pt, l1: number, l2: number, side: number): Pt {
+  const dx = t.x - s.x;
+  const dy = t.y - s.y;
+  const d = Math.min(l1 + l2 - 0.01, Math.max(Math.abs(l1 - l2) + 0.01, Math.hypot(dx, dy)));
+  const a = (l1 * l1 - l2 * l2 + d * d) / (2 * d);
+  const h = Math.sqrt(Math.max(0, l1 * l1 - a * a));
+  const ux = dx / Math.hypot(dx, dy || 1e-6);
+  const uy = dy / Math.hypot(dx, dy || 1e-6);
+  const px = s.x + a * ux;
+  const py = s.y + a * uy;
+  const k1 = { x: px - h * uy, y: py + h * ux };
+  const k2 = { x: px + h * uy, y: py - h * ux };
+  return k1.x * side > k2.x * side ? k1 : k2;
+}
+
+/** Tip of a front leg for a given cycle position p ∈ [0,1). */
+function frontTip(p: number, side: number): Pt {
+  if (p < 0.5) {
+    // gripping the line and hauling it up
+    const s = p / 0.5;
+    return { x: side * 1.6, y: REACH_LOW - STROKE * s };
+  }
+  // let go, swing out and reach back down for the next grab
+  const s = (p - 0.5) / 0.5;
+  const e = 0.5 - 0.5 * Math.cos(Math.PI * s);
+  return { x: side * (1.6 + 20 * Math.sin(Math.PI * s)), y: REACH_HIGH + STROKE * e - 6 * Math.sin(Math.PI * s) };
+}
+
+function legPath(s: Pt, k: Pt, t: Pt) {
+  return `M${s.x.toFixed(2)} ${s.y.toFixed(2)}L${k.x.toFixed(2)} ${k.y.toFixed(2)}L${t.x.toFixed(2)} ${t.y.toFixed(2)}`;
+}
+
+const frac = (v: number) => v - Math.floor(v);
+
 /**
  * Paper-stack scrolling: every `[data-paper]` section is sticky, so the one
  * you've read stays pinned while the next slides over it like a new sheet.
- * A spider in the top-left corner shoots a web line onto the incoming sheet
- * and reels it up as you scroll.
+ * Each sheet travels one screen height, hauled up hand-over-hand by a spider
+ * in the top-left corner. Every pose is derived from the scroll position, so
+ * scrolling back plays the pull in reverse (the spider pays the line out).
  */
 export function PaperStack() {
   const rigRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const bodyRef = useRef<SVGGElement>(null);
+  const frontRefs = useRef<(SVGPathElement | null)[]>([]);
+  const clawRefs = useRef<(SVGCircleElement | null)[]>([]);
+  const backRefs = useRef<(SVGPathElement | null)[]>([]);
   const threadRef = useRef<HTMLDivElement>(null);
   const patchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const sections = Array.from(document.querySelectorAll<HTMLElement>("[data-paper]"));
     const rig = rigRef.current;
+    const svg = svgRef.current;
+    const body = bodyRef.current;
     const thread = threadRef.current;
     const patch = patchRef.current;
-    if (!sections.length || !rig || !thread || !patch) return;
+    if (!sections.length || !rig || !svg || !body || !thread || !patch) return;
 
     let stickTops: number[] = [];
+    let headerBottom = 0;
     let raf = 0;
-    let idleTimer = 0;
-    let lastLen = -1;
+    let lastPulled = 0;
+    let dirTimer = 0;
 
-    const headerHeight = () =>
-      document.querySelector(".sp-header")?.getBoundingClientRect().height ?? 0;
+    const pose = (phase: number) => {
+      // body bobs slightly with each haul
+      body.setAttribute("transform", `translate(0 ${(1.6 * Math.sin(phase * Math.PI * 4)).toFixed(2)})`);
+      [-1, 1].forEach((side, i) => {
+        const p = frac(phase + (side < 0 ? 0 : 0.5));
+        const sh = { x: side * FRONT.sx, y: FRONT.sy };
+        const tip = frontTip(p, side);
+        const knee = solveKnee(sh, tip, FRONT.l1, FRONT.l2, side);
+        frontRefs.current[i]?.setAttribute("d", legPath(sh, knee, tip));
+        const claw = clawRefs.current[i];
+        if (claw) {
+          claw.setAttribute("cx", tip.x.toFixed(2));
+          claw.setAttribute("cy", tip.y.toFixed(2));
+          claw.setAttribute("r", p < 0.5 ? "2.6" : "1.6"); // closed fist while gripping
+        }
+      });
+      // back legs brace and twitch with the effort
+      let j = 0;
+      for (const side of [-1, 1]) {
+        BACK_LEGS.forEach(([sx, sy, ka, ta, l1, l2], k) => {
+          const tw = 4 * Math.sin(phase * Math.PI * 4 + k * 1.3 + (side > 0 ? Math.PI : 0));
+          const s0 = { x: side * sx, y: sy };
+          const a1 = ((ka + tw) * Math.PI) / 180;
+          const knee = { x: s0.x + side * l1 * Math.cos(a1), y: s0.y + l1 * Math.sin(a1) };
+          const a2 = ((ta + tw * 0.6) * Math.PI) / 180;
+          const tip = { x: knee.x + side * l2 * Math.cos(a2), y: knee.y + l2 * Math.sin(a2) };
+          backRefs.current[j++]?.setAttribute("d", legPath(s0, knee, tip));
+        });
+      }
+    };
 
     const update = () => {
       raf = 0;
       const vh = window.innerHeight;
-      const rects = sections.map((s) => s.getBoundingClientRect());
+      const tops = sections.map((s) => s.getBoundingClientRect().top);
 
-      // Find the sheet currently travelling up (not yet pinned, but on screen).
+      // Each sheet is hauled from the bottom of the screen to just under the
+      // header: one screen of scrolling. Summing every sheet's progress gives
+      // one continuous "line hauled" value, so the legs never jump between sheets.
+      let pulled = 0;
       let incoming = -1;
       for (let i = 1; i < sections.length; i++) {
-        const top = rects[i].top;
-        if (top > stickTops[i] + 0.5 && top < vh - 1) {
-          incoming = i;
-          break;
-        }
+        const dock = Math.max(stickTops[i], headerBottom);
+        const travel = Math.max(1, vh - dock);
+        pulled += Math.min(travel, Math.max(0, vh - tops[i]));
+        if (incoming === -1 && tops[i] > dock + 0.5 && tops[i] < vh - 1) incoming = i;
       }
 
       // Darken each sheet as the next one covers it.
       sections.forEach((s, i) => {
-        const next = rects[i + 1];
         let dim = 0;
-        if (next) {
-          const travel = vh - stickTops[i + 1];
-          dim = travel > 0 ? Math.min(1, Math.max(0, (vh - next.top) / travel)) : 0;
+        if (i + 1 < sections.length) {
+          const dock = Math.max(stickTops[i + 1], headerBottom);
+          const travel = vh - dock;
+          dim = travel > 0 ? Math.min(1, Math.max(0, (vh - tops[i + 1]) / travel)) : 0;
         }
         s.style.setProperty("--paper-dim", (dim * 0.45).toFixed(3));
       });
 
-      const anchorY = rig.getBoundingClientRect().bottom - 6;
+      // Convert hauled pixels into leg-cycle phase: during each half-cycle one
+      // leg hauls exactly STROKE units, so the gripping tip moves with the line.
+      const r = svg.getBoundingClientRect();
+      const scale = r.height / VB.h; // px per viewBox unit
+      pose(pulled / (2 * STROKE * scale));
+
+      const dir = Math.sign(pulled - lastPulled);
+      if (dir !== 0) {
+        rig.classList.toggle("is-hauling", dir > 0);
+        rig.classList.toggle("is-releasing", dir < 0);
+        window.clearTimeout(dirTimer);
+        dirTimer = window.setTimeout(() => rig.classList.remove("is-hauling", "is-releasing"), 180);
+      }
+      lastPulled = pulled;
+
+      const mouthY = r.top + (MOUTH.y - VB.y) * scale;
       if (incoming === -1) {
         rig.classList.remove("is-pulling");
         thread.style.height = "0px";
-        lastLen = 0;
         return;
       }
-      const len = Math.max(0, rects[incoming].top - anchorY);
+      const len = Math.max(0, tops[incoming] - mouthY);
       rig.classList.add("is-pulling");
+      thread.style.top = `${(MOUTH.y - VB.y) * scale}px`;
       thread.style.height = `${len}px`;
-      patch.style.transform = `translate(-50%, ${len}px)`;
-
-      if (lastLen >= 0 && Math.abs(len - lastLen) > 0.5) {
-        rig.classList.add("is-reeling");
-        window.clearTimeout(idleTimer);
-        idleTimer = window.setTimeout(() => rig.classList.remove("is-reeling"), 160);
-      }
-      lastLen = len;
+      patch.style.top = `${(MOUTH.y - VB.y) * scale + len}px`;
     };
 
     const schedule = () => {
@@ -260,15 +364,15 @@ export function PaperStack() {
     };
 
     const measure = () => {
-      const header = headerHeight();
+      headerBottom = document.querySelector(".sp-header")?.getBoundingClientRect().bottom ?? 0;
       const vh = window.innerHeight;
       stickTops = sections.map((s, i) => {
         // Short sheets pin under the header; tall ones pin once their bottom
         // reaches the bottom of the screen, so nothing is covered unread.
-        const t = Math.min(header, vh - s.offsetHeight);
-        s.style.top = `${Math.round(t)}px`;
+        const t = Math.round(Math.min(headerBottom, vh - s.offsetHeight));
+        s.style.top = `${t}px`;
         s.style.zIndex = String(i + 1);
-        return Math.round(t);
+        return t;
       });
       schedule();
     };
@@ -282,7 +386,7 @@ export function PaperStack() {
       ro.disconnect();
       window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", measure);
-      window.clearTimeout(idleTimer);
+      window.clearTimeout(dirTimer);
       if (raf) cancelAnimationFrame(raf);
     };
   }, []);
@@ -291,7 +395,37 @@ export function PaperStack() {
     <div className="sp-puller" aria-hidden="true">
       <div className="sp-puller-rig" ref={rigRef}>
         <div className="sp-puller-anchor" />
-        <SpiderGlyph className="sp-puller-spider" />
+        <svg
+          ref={svgRef}
+          className="sp-puller-spider"
+          viewBox={`${VB.x} ${VB.y} ${VB.w} ${VB.h}`}
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <g ref={bodyRef}>
+            <g className="sp-legs" stroke="currentColor" strokeWidth="3.6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <path key={i} ref={(el) => { backRefs.current[i] = el; }} />
+              ))}
+            </g>
+            {/* abdomen (up) and head (down, facing the prey) */}
+            <ellipse cx="0" cy="-19" rx="13" ry="17" fill="currentColor" />
+            <path d="M-6 -27 Q0 -31 6 -27 M-7 -18 Q0 -22 7 -18 M-6 -9 Q0 -13 6 -9" stroke="#e0182d" strokeWidth="2" />
+            <ellipse cx="0" cy="4" rx="9.5" ry="10.5" fill="currentColor" />
+            <circle cx="-3.2" cy="9" r="1.7" fill="#fff" />
+            <circle cx="3.2" cy="9" r="1.7" fill="#fff" />
+            <path d="M-2.4 12.5 L-1.4 15.5 M2.4 12.5 L1.4 15.5" stroke="currentColor" strokeWidth="2.2" />
+            <g className="sp-front-legs" stroke="currentColor" strokeWidth="4.2">
+              {[0, 1].map((i) => (
+                <path key={i} ref={(el) => { frontRefs.current[i] = el; }} />
+              ))}
+            </g>
+            {[0, 1].map((i) => (
+              <circle key={i} ref={(el) => { clawRefs.current[i] = el; }} r="2" fill="currentColor" />
+            ))}
+          </g>
+        </svg>
         <div className="sp-puller-thread" ref={threadRef} />
         <div className="sp-puller-patch" ref={patchRef}>
           <WebDisc className="sp-puller-web" />

@@ -1113,62 +1113,69 @@ textarea.sp-input { resize: vertical; min-height: 120px; max-height: 260px; }
   z-index: 30;
 }
 
-/* the spider that reels each new sheet in */
+/* the spider that hauls each new sheet in, hand over hand */
 .sp-puller {
   position: fixed;
-  top: calc(var(--sp-header-h) + 6px);
-  left: clamp(4px, 1.6vw, 22px);
+  top: calc(var(--sp-header-h) + 10px);
+  left: clamp(-14px, calc(2vw - 22px), 6px);
   z-index: 45;
   pointer-events: none;
 }
 .sp-puller-rig {
   position: relative;
-  width: 34px;
+  width: 82px; /* viewBox is 120 x 140 */
 }
 .sp-puller-anchor {
-  /* the line the spider hangs from, up to the header */
+  /* silk the spider braces against, up to the header */
   position: absolute;
   left: 50%;
-  bottom: 100%;
+  top: -14px;
   width: 2px;
-  height: 10px;
+  height: 30px;
   transform: translateX(-50%);
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 0 1px rgba(11, 15, 26, 0.45);
 }
 .sp-puller-spider {
+  position: relative;
   display: block;
-  width: 34px;
-  height: 42px;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 120 / 140;
   color: var(--sp-ink);
-  filter: drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 1px #fff);
-  transform-origin: 50% 20%;
-  animation: sp-dangle 3.2s ease-in-out infinite;
+  overflow: visible;
+  filter: drop-shadow(0 0 1.2px #fff) drop-shadow(0 0 1px #fff) drop-shadow(0 3px 4px rgba(2, 4, 12, 0.35));
+  z-index: 2;
 }
 .sp-puller-thread {
+  /* top/height are set from the spider's jaws to the incoming sheet */
   position: absolute;
   left: 50%;
-  top: calc(100% - 6px);
+  top: 0;
   width: 3px;
   height: 0;
   transform: translateX(-50%);
-  background: linear-gradient(180deg, #fff, #e6eaf5);
-  box-shadow: 0 0 0 1px rgba(11, 15, 26, 0.6), 0 0 6px rgba(255, 255, 255, 0.6);
+  /* beads anchored to the sheet end, so you can see the line travel */
+  background:
+    repeating-linear-gradient(180deg, #fff 0 9px, #b9c2dc 9px 12px) 0 100% / 100% 12px;
+  box-shadow: 0 0 0 1px rgba(11, 15, 26, 0.55), 0 0 6px rgba(255, 255, 255, 0.55);
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.15s ease;
+  z-index: 1;
 }
 .sp-puller-patch {
   position: absolute;
   left: 50%;
-  top: calc(100% - 6px);
+  top: 0;
   width: 0;
   height: 0;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.15s ease;
 }
 .sp-puller-web {
   position: absolute;
   left: -26px;
-  top: -16px;
+  top: -14px;
   width: 52px;
   height: 52px;
   color: #fff;
@@ -1178,25 +1185,11 @@ textarea.sp-input { resize: vertical; min-height: 120px; max-height: 260px; }
 .sp-puller-rig.is-pulling .sp-puller-patch {
   opacity: 1;
 }
-.sp-puller-rig.is-pulling .sp-puller-spider {
-  animation: none;
-  transform: rotate(0deg);
-}
-.sp-puller-rig.is-reeling .sp-puller-spider {
-  animation: sp-reel 0.18s linear infinite;
-}
-@keyframes sp-dangle {
-  0%, 100% { transform: rotate(-5deg); }
-  50% { transform: rotate(5deg); }
-}
-@keyframes sp-reel {
-  0% { transform: translateY(0) scaleX(1); }
-  50% { transform: translateY(-2px) scaleX(0.93); }
-  100% { transform: translateY(0) scaleX(1); }
-}
+/* a touch of red strain on the hauling legs */
+.sp-puller-rig.is-hauling .sp-front-legs { stroke: #2a0a10; }
 @media (max-width: 640px) {
-  .sp-puller-rig { width: 26px; }
-  .sp-puller-spider { width: 26px; height: 32px; }
+  .sp-puller { left: -16px; }
+  .sp-puller-rig { width: 62px; }
 }
 
 /* ---------- effects: web shooter ---------- */
