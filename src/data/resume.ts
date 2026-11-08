@@ -40,6 +40,8 @@ export type Personal = {
   github: string;
   resumePdf?: string;
   avatar?: string;
+  /** Optional stylised "alter ego" image shown over the avatar in the hero's hover-to-reveal portrait. */
+  alterEgo?: string;
 };
 
 export type Resume = {

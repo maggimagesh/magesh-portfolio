@@ -1,4 +1,5 @@
 import '../src/index.css'
+import '../src/styles/hero-reveal.css'
 import Head from 'next/head'
 
 export default function App({ Component, pageProps }) {
