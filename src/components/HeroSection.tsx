@@ -2,52 +2,18 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { Download, ArrowRight, MousePointer2, Hand } from "lucide-react";
 import resume from "../data/resume";
+import { Skyline, SpiderGlyph, WebCorner } from "./spidey/Spidey";
 
 const STATS = [
-  { label: "Years Experience", value: "6+" },
-  { label: "Projects", value: "10+" },
-  { label: "Bug Reports", value: "1000+" },
-  { label: "Automation Frameworks", value: "2" },
+  { label: "Years on patrol", value: "6+" },
+  { label: "Missions shipped", value: "10+" },
+  { label: "Bugs caught", value: "1000+" },
+  { label: "Frameworks built", value: "2" },
 ];
 
 /**
- * Original "scan target" ornament (crosshair + concentric rings) used as the
- * hero's decorative corner pieces — a QA-themed nod to finding bugs.
- */
-function ScanOrnament({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 200 200"
-      fill="none"
-      stroke="currentColor"
-      aria-hidden="true"
-    >
-      {[30, 55, 80, 98].map((r) => (
-        <circle key={r} cx="100" cy="100" r={r} strokeWidth="1.2" strokeDasharray={r === 98 ? "4 6" : undefined} />
-      ))}
-      {Array.from({ length: 12 }).map((_, i) => {
-        const a = (i * Math.PI) / 6;
-        return (
-          <line
-            key={i}
-            x1={100 + Math.cos(a) * 12}
-            y1={100 + Math.sin(a) * 12}
-            x2={100 + Math.cos(a) * 98}
-            y2={100 + Math.sin(a) * 98}
-            strokeWidth="1"
-          />
-        );
-      })}
-      <circle cx="100" cy="100" r="5" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
-/**
- * Portrait with a "hover to reveal" spotlight: the base layer is a comic-book
- * (halftone, duotone) alter ego; a circular lens that follows the pointer
- * reveals the real photo underneath.
+ * Portrait with a "hover to reveal" lens: the suited-up alter ego sits on top,
+ * and a circular lens that follows the pointer reveals the real photo.
  */
 function RevealPortrait() {
   const frameRef = useRef<HTMLDivElement>(null);
@@ -71,13 +37,13 @@ function RevealPortrait() {
     if (!active) setActive(true);
   };
 
-  // Start the lens over the face so the first reveal looks intentional.
+  // Start the lens over the mask so the first reveal lands on the face.
   useEffect(() => {
     const el = frameRef.current;
     if (!el) return;
     const place = () => {
       const r = el.getBoundingClientRect();
-      setLens(r.width * 0.46, r.height * 0.27);
+      setLens(r.width * 0.45, r.height * 0.24);
     };
     place();
     window.addEventListener("resize", place);
@@ -88,8 +54,8 @@ function RevealPortrait() {
   }, [setLens]);
 
   const revealed = active || pinned;
-  const avatar = resume.personal.avatar ?? "/logos/me.png";
-  const alterEgo = resume.personal.alterEgo;
+  const real = "/spidey/me-cutout.webp";
+  const suit = resume.personal.alterEgo ?? "/spidey/suit.webp";
 
   return (
     <div
@@ -103,45 +69,30 @@ function RevealPortrait() {
       onPointerUp={(e) => {
         if (e.pointerType !== "mouse") setActive(false);
       }}
-      onClick={() => setPinned((p) => !p)}
+      onClick={(e) => {
+        e.stopPropagation();
+        setPinned((p) => !p);
+      }}
       role="img"
-      aria-label={`${resume.personal.name} — hover or tap the portrait to reveal the photo behind the comic alter ego`}
+      aria-label={`${resume.personal.name} in a spider suit — hover or tap to unmask`}
     >
-      {/* Alter-ego layer */}
-      <div className="reveal-layer reveal-alter">
-        {alterEgo ? (
-          <img src={alterEgo} alt="" draggable={false} />
-        ) : (
-          <>
-            <img src={avatar} alt="" draggable={false} className="reveal-alter-photo" />
-            <div className="reveal-halftone" />
-            <svg
-              className="reveal-visor"
-              viewBox="0 0 120 40"
-              aria-hidden="true"
-            >
-              <path
-                d="M4 14 C 20 2, 48 4, 60 12 C 72 4, 100 2, 116 14 C 114 30, 92 38, 72 32 C 66 30, 62 26, 60 26 C 58 26, 54 30, 48 32 C 28 38, 6 30, 4 14 Z"
-                fill="#0f172a"
-              />
-              <ellipse cx="34" cy="19" rx="11" ry="6.5" fill="#f8fafc" />
-              <ellipse cx="86" cy="19" rx="11" ry="6.5" fill="#f8fafc" />
-            </svg>
-          </>
-        )}
+      <div className="reveal-sky" aria-hidden="true">
+        <div className="reveal-moon" />
+        <Skyline className="reveal-skyline" />
+        <WebCorner corner="tr" className="reveal-web" />
       </div>
 
-      {/* Real photo, clipped to the lens */}
-      <div className="reveal-layer reveal-real">
-        <img src={avatar} alt="" draggable={false} />
+      <img className="reveal-img reveal-suit" src={suit} alt="" draggable={false} />
+      <div className="reveal-real">
+        <img className="reveal-img" src={real} alt="" draggable={false} />
       </div>
       <div className="reveal-lens-ring" aria-hidden="true" />
 
       <div className="reveal-hint" aria-hidden="true">
         <MousePointer2 className="reveal-hint-icon reveal-hint-mouse" />
         <Hand className="reveal-hint-icon reveal-hint-touch" />
-        <span className="reveal-hint-mouse">Hover to reveal</span>
-        <span className="reveal-hint-touch">Touch &amp; drag to reveal</span>
+        <span className="reveal-hint-mouse">Hover to unmask</span>
+        <span className="reveal-hint-touch">Touch &amp; drag to unmask</span>
       </div>
     </div>
   );
@@ -152,52 +103,53 @@ export function HeroSection() {
   const restName = rest.join(" ");
 
   return (
-    <section id="about" className="comic-hero">
-      <div className="comic-hero-dots" aria-hidden="true" />
-      <ScanOrnament className="comic-ornament comic-ornament-tl" />
-      <ScanOrnament className="comic-ornament comic-ornament-br" />
+    <section id="about" className="sp-hero">
+      <div className="sp-halftone" aria-hidden="true" />
+      <WebCorner corner="tl" className="sp-hero-web" />
+      <WebCorner corner="br" className="sp-hero-web sp-hero-web-red" />
 
-      <div className="comic-hero-inner">
+      <div className="sp-hero-inner">
         <motion.div
           initial={{ opacity: 0, x: -40 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.7 }}
-          className="comic-hero-copy"
+          className="sp-hero-copy"
         >
-          <p className="comic-kicker">Bug hunter by day · Quality guardian always</p>
+          <p className="sp-kicker">Your friendly neighbourhood QA engineer</p>
 
-          <h1 className="comic-title">
+          <h1 className="sp-title">
             <span>{first}</span>
             {restName ? <span>{restName}.</span> : null}
           </h1>
 
-          <p className="comic-role">{resume.personal.title}</p>
+          <p className="sp-role">
+            <SpiderGlyph className="sp-role-glyph" />
+            {resume.personal.title}
+          </p>
 
-          <p className="comic-profile">{resume.profile}</p>
+          <p className="sp-profile">{resume.profile}</p>
 
-          <div className="comic-skills">
+          <div className="sp-chips">
             {resume.skills.slice(0, 6).map((skill) => (
-              <span key={skill} className="comic-chip">
+              <span key={skill} className="sp-chip">
                 {skill}
               </span>
             ))}
           </div>
 
-          <div className="comic-actions">
+          <div className="sp-actions">
             <button
               type="button"
-              className="comic-btn comic-btn-red"
+              className="sp-btn sp-btn-red"
               onClick={() =>
-                document
-                  .getElementById("projects")
-                  ?.scrollIntoView({ behavior: "smooth" })
+                document.getElementById("projects")?.scrollIntoView({ behavior: "smooth" })
               }
             >
               Explore Projects <ArrowRight size={18} />
             </button>
             {resume.personal.resumePdf ? (
               <a
-                className="comic-btn comic-btn-navy"
+                className="sp-btn sp-btn-navy"
                 href={resume.personal.resumePdf}
                 target="_blank"
                 rel="noreferrer"
@@ -207,9 +159,9 @@ export function HeroSection() {
             ) : null}
           </div>
 
-          <dl className="comic-stats">
+          <dl className="sp-stats">
             {STATS.map(({ label, value }) => (
-              <div key={label} className="comic-stat">
+              <div key={label} className="sp-stat">
                 <dt>{label}</dt>
                 <dd>{value}</dd>
               </div>
@@ -221,9 +173,12 @@ export function HeroSection() {
           initial={{ opacity: 0, scale: 0.94 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.7, delay: 0.2 }}
-          className="comic-hero-art"
+          className="sp-hero-art"
         >
           <RevealPortrait />
+          <span className="sp-burst sp-burst-hero" aria-hidden="true">
+            Spidey-sense: bugs nearby!
+          </span>
         </motion.div>
       </div>
     </section>

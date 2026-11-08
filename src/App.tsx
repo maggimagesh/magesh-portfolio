@@ -7,12 +7,12 @@ import { ContactSection } from "./components/ContactSection";
 import { EducationSection } from "./components/EducationSection";
 import React from "react";
 import { motion } from "motion/react";
-import { Heart, Code } from "lucide-react";
 import resume from "./data/resume";
+import { HangingSpider, SpiderGlyph, WebShooter, Skyline } from "./components/spidey/Spidey";
 
 export default function App() {
   return (
-    <div className="min-h-screen pr-3 md:pr-6">
+    <div className="sp-app">
       <Header />
       <main>
         <HeroSection />
@@ -22,38 +22,31 @@ export default function App() {
         <ProjectsSection />
         <ContactSection />
       </main>
-      
-      <footer className="bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 text-white py-12 border-t border-purple-500/20">
-        <div className="container mx-auto px-4">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center space-y-4"
-          >
-            <div className="flex items-center justify-center gap-2 text-purple-300">
-              <Code className="h-5 w-5" />
-              <span className="text-lg font-medium">Built with passion for quality</span>
-              <Heart className="h-5 w-5 text-pink-400" />
-            </div>
-            
-            <p className="text-gray-300">
-              &copy; {new Date().getFullYear()} {resume.personal.name}. All rights reserved.
-            </p>
-            
-            <p className="text-sm text-gray-400 max-w-md mx-auto">
-              This resume website showcases modern web technologies and attention to detail - 
-              the same principles I bring to software testing.
-            </p>
-            
-            <div className="flex items-center justify-center gap-4 pt-4">
-              <div className="h-px bg-gradient-to-r from-transparent via-purple-500 to-transparent flex-1"></div>
-              <div className="text-purple-400 text-xs">{resume.personal.title.toUpperCase()}</div>
-              <div className="h-px bg-gradient-to-r from-transparent via-purple-500 to-transparent flex-1"></div>
-            </div>
-          </motion.div>
-        </div>
+
+      <footer className="sp-footer">
+        <Skyline className="sp-footer-skyline" stretch />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="sp-footer-inner"
+        >
+          <SpiderGlyph className="sp-footer-glyph" />
+          <p className="sp-footer-quote">
+            “With great test coverage comes great responsibility.”
+          </p>
+          <p className="sp-footer-copy">
+            &copy; {new Date().getFullYear()} {resume.personal.name} · {resume.personal.title}
+          </p>
+          <p className="sp-footer-note">
+            A fan-made spider theme for a personal portfolio. Not affiliated with or endorsed by Marvel.
+          </p>
+        </motion.div>
       </footer>
+
+      <HangingSpider />
+      <WebShooter />
     </div>
   );
 }
