@@ -103,7 +103,7 @@ export function HeroSection() {
   const restName = rest.join(" ");
 
   return (
-    <section data-paper id="about" className="sp-hero">
+    <section data-paper id="home" className="sp-hero">
       <div className="sp-halftone" aria-hidden="true" />
       <WebCorner corner="tl" className="sp-hero-web" />
       <WebCorner corner="br" className="sp-hero-web sp-hero-web-red" />
@@ -127,7 +127,10 @@ export function HeroSection() {
             {resume.personal.title}
           </p>
 
-          <p className="sp-profile">{resume.profile}</p>
+          <p className="sp-profile">
+            6+ years hunting bugs across web UIs, APIs and databases. I build the automation that keeps
+            releases boring, in the best way.
+          </p>
 
           <div className="sp-chips">
             {resume.skills.slice(0, 6).map((skill) => (

@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 /* ------------------------------------------------------------------
    Shared spider-theme pieces: web corners, emblem, headings, effects
@@ -98,14 +100,50 @@ export function SectionHeading({
   subtitle?: string;
   tone?: "dark" | "light" | "red";
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  // GSAP ScrollTrigger reveal: kicker slides in, title rises through a mask,
+  // subtitle tips up in 3D. Skipped entirely for reduced-motion visitors.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    gsap.registerPlugin(ScrollTrigger);
+    const mm = gsap.matchMedia();
+    const ctx = gsap.context(() => {
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        gsap
+          .timeline({ scrollTrigger: { trigger: el, start: "top 82%", once: true } })
+          .from(".sp-heading-kicker", { x: -30, opacity: 0, clipPath: "inset(0 100% 0 0)", duration: 0.55, ease: "power3.out" })
+          .from(".sp-heading-reveal > span", { yPercent: 110, duration: 0.8, ease: "power4.out" }, "-=0.25")
+          .from(
+            ".sp-heading-sub",
+            { y: 30, opacity: 0, rotationX: -40, transformOrigin: "50% 100%", duration: 0.75, ease: "back.out(1.6)" },
+            "-=0.45"
+          );
+      });
+    }, el);
+    return () => {
+      ctx.revert();
+      mm.revert();
+    };
+  }, []);
+
   return (
-    <div className={`sp-heading sp-heading-${tone}`}>
+    <div ref={ref} className={`sp-heading sp-heading-${tone}`}>
       <span className="sp-heading-kicker">
         <SpiderGlyph className="sp-heading-glyph" />
         {kicker}
       </span>
-      <h2 className="sp-heading-title">{title}</h2>
-      {subtitle ? <p className="sp-heading-sub">{subtitle}</p> : null}
+      <h2 className="sp-heading-title">
+        <span className="sp-heading-reveal">
+          <span>{title}</span>
+        </span>
+      </h2>
+      {subtitle ? (
+        <div className="sp-heading-subwrap">
+          <p className="sp-heading-sub">{subtitle}</p>
+        </div>
+      ) : null}
     </div>
   );
 }
