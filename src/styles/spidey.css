@@ -1123,7 +1123,7 @@ textarea.sp-input { resize: vertical; min-height: 120px; max-height: 260px; }
 }
 .sp-puller-rig {
   position: relative;
-  width: 82px; /* viewBox is 120 x 140 */
+  width: 108px; /* viewBox is 160 x 120: wide and low, like a real spider */
 }
 .sp-puller-anchor {
   /* silk the spider braces against, up to the header */
@@ -1141,10 +1141,11 @@ textarea.sp-input { resize: vertical; min-height: 120px; max-height: 260px; }
   display: block;
   width: 100%;
   height: auto;
-  aspect-ratio: 120 / 140;
-  color: var(--sp-ink);
+  aspect-ratio: 160 / 120;
   overflow: visible;
-  filter: drop-shadow(0 0 1.2px #fff) drop-shadow(0 0 1px #fff) drop-shadow(0 3px 4px rgba(2, 4, 12, 0.35));
+  /* thin light rim so the dark legs read on any section, plus a neon aura */
+  filter: drop-shadow(0 0 0.8px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 6px rgba(56, 232, 255, 0.35))
+    drop-shadow(0 3px 4px rgba(2, 4, 12, 0.35));
   z-index: 2;
 }
 .sp-puller-thread {
@@ -1159,8 +1160,7 @@ textarea.sp-input { resize: vertical; min-height: 120px; max-height: 260px; }
   background:
     repeating-linear-gradient(180deg, #fff 0 9px, #b9c2dc 9px 12px) 0 100% / 100% 12px;
   box-shadow: 0 0 0 1px rgba(11, 15, 26, 0.55), 0 0 6px rgba(255, 255, 255, 0.55);
-  opacity: 0;
-  transition: opacity 0.15s ease;
+  opacity: 1;
   z-index: 1;
 }
 .sp-puller-patch {
@@ -1181,15 +1181,15 @@ textarea.sp-input { resize: vertical; min-height: 120px; max-height: 260px; }
   color: #fff;
   filter: drop-shadow(0 0 1px rgba(11, 15, 26, 1)) drop-shadow(1px 1px 0 rgba(11, 15, 26, 0.6));
 }
-.sp-puller-rig.is-pulling .sp-puller-thread,
-.sp-puller-rig.is-pulling .sp-puller-patch {
+.sp-puller-rig.is-hooked .sp-puller-patch {
   opacity: 1;
 }
-/* a touch of red strain on the hauling legs */
-.sp-puller-rig.is-hauling .sp-front-legs { stroke: #2a0a10; }
+/* the front legs glow a little while they're working the line */
+.sp-puller-rig.is-hauling .sp-front-legs,
+.sp-puller-rig.is-releasing .sp-front-legs { stroke: #1b1030; }
 @media (max-width: 640px) {
   .sp-puller { left: -16px; }
-  .sp-puller-rig { width: 62px; }
+  .sp-puller-rig { width: 80px; }
 }
 
 /* ---------- effects: web shooter ---------- */

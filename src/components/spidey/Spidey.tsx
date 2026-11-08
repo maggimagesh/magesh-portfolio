@@ -184,24 +184,25 @@ export function scrollToSection(id: string) {
 }
 
 /* ------------------------------------------------------------------
-   Paper stack + the spider that reels each sheet in
+   Paper stack + the spider that hauls the page
    ------------------------------------------------------------------ */
 
-// Spider rig geometry, in SVG viewBox units (viewBox "-60 -50 120 140").
-// The spider hangs head-down, like a real spider hauling prey up its line.
-const VB = { x: -60, y: -50, w: 120, h: 140 };
-const MOUTH = { x: 0, y: 14 }; // where the line leaves the spider
-const FRONT = { sx: 6, sy: 11, l1: 30, l2: 34 }; // shoulder + segment lengths
-const REACH_HIGH = 22; // tip height at the end of a pull (near the jaws)
-const REACH_LOW = 76; // tip height when reaching down to grab the line
-const STROKE = REACH_LOW - REACH_HIGH; // line travel per pull, in viewBox units
+// Spider rig geometry, in SVG viewBox units. A real spider is wide and low:
+// a compact two-part body with long, arched legs spread far out. It hangs
+// head-down, the way a spider hauls prey up its line.
+const VB = { x: -80, y: -40, w: 160, h: 120 };
+const MOUTH = { x: 0, y: 13 }; // where the line leaves the spider
+const FRONT = { sx: 4.5, sy: 9, l1: 24, l2: 27 }; // front-leg shoulders + segments
+const REACH_HIGH = 18; // tip height at the end of a haul (at the jaws)
+const REACH_LOW = 64; // tip height when reaching down to grab the line
+const STROKE = REACH_LOW - REACH_HIGH; // line hauled per stroke, viewBox units
+// Back legs, right side (mirrored for left): shoulder, knee angle°, tip angle°,
+// segment lengths. Knees sit high above the tips for the arched spider look.
 const BACK_LEGS = [
-  // [shoulder x, shoulder y, knee angle°, tip angle°, l1, l2] for the right side;
-  // mirrored for the left. They grip the silk above and splay outward.
-  [7, 4, -28, 8, 24, 28],
-  [8, -1, -58, -18, 24, 30],
-  [7, -6, -88, -52, 22, 30],
-] as const;
+  { sx: 6, sy: 6, ka: -22, ta: 48, l1: 30, l2: 36 },
+  { sx: 7, sy: 2, ka: -48, ta: 18, l1: 30, l2: 38 },
+  { sx: 6, sy: -2, ka: -82, ta: -22, l1: 28, l2: 36 },
+];
 
 type Pt = { x: number; y: number };
 
@@ -209,11 +210,12 @@ type Pt = { x: number; y: number };
 function solveKnee(s: Pt, t: Pt, l1: number, l2: number, side: number): Pt {
   const dx = t.x - s.x;
   const dy = t.y - s.y;
-  const d = Math.min(l1 + l2 - 0.01, Math.max(Math.abs(l1 - l2) + 0.01, Math.hypot(dx, dy)));
+  const len = Math.hypot(dx, dy) || 1e-6;
+  const d = Math.min(l1 + l2 - 0.01, Math.max(Math.abs(l1 - l2) + 0.01, len));
   const a = (l1 * l1 - l2 * l2 + d * d) / (2 * d);
   const h = Math.sqrt(Math.max(0, l1 * l1 - a * a));
-  const ux = dx / Math.hypot(dx, dy || 1e-6);
-  const uy = dy / Math.hypot(dx, dy || 1e-6);
+  const ux = dx / len;
+  const uy = dy / len;
   const px = s.x + a * ux;
   const py = s.y + a * uy;
   const k1 = { x: px - h * uy, y: py + h * ux };
@@ -221,21 +223,25 @@ function solveKnee(s: Pt, t: Pt, l1: number, l2: number, side: number): Pt {
   return k1.x * side > k2.x * side ? k1 : k2;
 }
 
-/** Tip of a front leg for a given cycle position p ∈ [0,1). */
+/** Tip of a front leg for a cycle position p ∈ [0,1). */
 function frontTip(p: number, side: number): Pt {
   if (p < 0.5) {
     // gripping the line and hauling it up
     const s = p / 0.5;
-    return { x: side * 1.6, y: REACH_LOW - STROKE * s };
+    return { x: side * 1.4, y: REACH_LOW - STROKE * s };
   }
   // let go, swing out and reach back down for the next grab
   const s = (p - 0.5) / 0.5;
   const e = 0.5 - 0.5 * Math.cos(Math.PI * s);
-  return { x: side * (1.6 + 20 * Math.sin(Math.PI * s)), y: REACH_HIGH + STROKE * e - 6 * Math.sin(Math.PI * s) };
+  return { x: side * (1.4 + 22 * Math.sin(Math.PI * s)), y: REACH_HIGH + STROKE * e - 8 * Math.sin(Math.PI * s) };
 }
 
+/** Smooth leg: shoulder → knee → tip with a slight curve, like a real segment. */
 function legPath(s: Pt, k: Pt, t: Pt) {
-  return `M${s.x.toFixed(2)} ${s.y.toFixed(2)}L${k.x.toFixed(2)} ${k.y.toFixed(2)}L${t.x.toFixed(2)} ${t.y.toFixed(2)}`;
+  const f = (v: number) => v.toFixed(2);
+  const c1 = { x: (s.x + k.x) / 2, y: (s.y + k.y) / 2 - 2 };
+  const c2 = { x: (k.x + t.x) / 2, y: (k.y + t.y) / 2 - 1 };
+  return `M${f(s.x)} ${f(s.y)}Q${f(c1.x)} ${f(c1.y)} ${f(k.x)} ${f(k.y)}Q${f(c2.x)} ${f(c2.y)} ${f(t.x)} ${f(t.y)}`;
 }
 
 const frac = (v: number) => v - Math.floor(v);
@@ -243,17 +249,21 @@ const frac = (v: number) => v - Math.floor(v);
 /**
  * Paper-stack scrolling: every `[data-paper]` section is sticky, so the one
  * you've read stays pinned while the next slides over it like a new sheet.
- * Each sheet travels one screen height, hauled up hand-over-hand by a spider
- * in the top-left corner. Every pose is derived from the scroll position, so
- * scrolling back plays the pull in reverse (the spider pays the line out).
+ *
+ * A glowing spider in the top-left corner hauls the page up its line the
+ * whole time you scroll: its front legs take turns gripping and pulling, and
+ * every pose comes from the scroll position, so it pulls as you scroll down,
+ * pays the line out as you scroll up, and freezes when you stop.
  */
 export function PaperStack() {
   const rigRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const bodyRef = useRef<SVGGElement>(null);
   const frontRefs = useRef<(SVGPathElement | null)[]>([]);
+  const kneeRefs = useRef<(SVGCircleElement | null)[]>([]);
   const clawRefs = useRef<(SVGCircleElement | null)[]>([]);
   const backRefs = useRef<(SVGPathElement | null)[]>([]);
+  const backKneeRefs = useRef<(SVGCircleElement | null)[]>([]);
   const threadRef = useRef<HTMLDivElement>(null);
   const patchRef = useRef<HTMLDivElement>(null);
 
@@ -269,36 +279,46 @@ export function PaperStack() {
     let stickTops: number[] = [];
     let headerBottom = 0;
     let raf = 0;
-    let lastPulled = 0;
+    let lastY = window.scrollY;
     let dirTimer = 0;
 
+    const setCircle = (c: SVGCircleElement | null | undefined, p: Pt) => {
+      if (!c) return;
+      c.setAttribute("cx", p.x.toFixed(2));
+      c.setAttribute("cy", p.y.toFixed(2));
+    };
+
     const pose = (phase: number) => {
-      // body bobs slightly with each haul
-      body.setAttribute("transform", `translate(0 ${(1.6 * Math.sin(phase * Math.PI * 4)).toFixed(2)})`);
+      // the body rocks slightly with each haul
+      const bob = 1.4 * Math.sin(phase * Math.PI * 4);
+      const tilt = 3 * Math.sin(phase * Math.PI * 2);
+      body.setAttribute("transform", `translate(0 ${bob.toFixed(2)}) rotate(${tilt.toFixed(2)} 0 0)`);
+
       [-1, 1].forEach((side, i) => {
         const p = frac(phase + (side < 0 ? 0 : 0.5));
         const sh = { x: side * FRONT.sx, y: FRONT.sy };
         const tip = frontTip(p, side);
         const knee = solveKnee(sh, tip, FRONT.l1, FRONT.l2, side);
         frontRefs.current[i]?.setAttribute("d", legPath(sh, knee, tip));
+        setCircle(kneeRefs.current[i], knee);
         const claw = clawRefs.current[i];
-        if (claw) {
-          claw.setAttribute("cx", tip.x.toFixed(2));
-          claw.setAttribute("cy", tip.y.toFixed(2));
-          claw.setAttribute("r", p < 0.5 ? "2.6" : "1.6"); // closed fist while gripping
-        }
+        setCircle(claw, tip);
+        claw?.setAttribute("r", p < 0.5 ? "2.4" : "1.5"); // closed grip while hauling
       });
-      // back legs brace and twitch with the effort
+
+      // back legs brace and shift with the effort
       let j = 0;
       for (const side of [-1, 1]) {
-        BACK_LEGS.forEach(([sx, sy, ka, ta, l1, l2], k) => {
-          const tw = 4 * Math.sin(phase * Math.PI * 4 + k * 1.3 + (side > 0 ? Math.PI : 0));
-          const s0 = { x: side * sx, y: sy };
-          const a1 = ((ka + tw) * Math.PI) / 180;
-          const knee = { x: s0.x + side * l1 * Math.cos(a1), y: s0.y + l1 * Math.sin(a1) };
-          const a2 = ((ta + tw * 0.6) * Math.PI) / 180;
-          const tip = { x: knee.x + side * l2 * Math.cos(a2), y: knee.y + l2 * Math.sin(a2) };
-          backRefs.current[j++]?.setAttribute("d", legPath(s0, knee, tip));
+        BACK_LEGS.forEach((L, k) => {
+          const tw = 5 * Math.sin(phase * Math.PI * 4 + k * 1.4 + (side > 0 ? Math.PI : 0));
+          const s0 = { x: side * L.sx, y: L.sy };
+          const a1 = ((L.ka + tw) * Math.PI) / 180;
+          const knee = { x: s0.x + side * L.l1 * Math.cos(a1), y: s0.y + L.l1 * Math.sin(a1) };
+          const a2 = ((L.ta + tw * 0.5) * Math.PI) / 180;
+          const tip = { x: knee.x + side * L.l2 * Math.cos(a2), y: knee.y + L.l2 * Math.sin(a2) };
+          backRefs.current[j]?.setAttribute("d", legPath(s0, knee, tip));
+          setCircle(backKneeRefs.current[j], knee);
+          j++;
         });
       }
     };
@@ -306,19 +326,8 @@ export function PaperStack() {
     const update = () => {
       raf = 0;
       const vh = window.innerHeight;
+      const y = window.scrollY;
       const tops = sections.map((s) => s.getBoundingClientRect().top);
-
-      // Each sheet is hauled from the bottom of the screen to just under the
-      // header: one screen of scrolling. Summing every sheet's progress gives
-      // one continuous "line hauled" value, so the legs never jump between sheets.
-      let pulled = 0;
-      let incoming = -1;
-      for (let i = 1; i < sections.length; i++) {
-        const dock = Math.max(stickTops[i], headerBottom);
-        const travel = Math.max(1, vh - dock);
-        pulled += Math.min(travel, Math.max(0, vh - tops[i]));
-        if (incoming === -1 && tops[i] > dock + 0.5 && tops[i] < vh - 1) incoming = i;
-      }
 
       // Darken each sheet as the next one covers it.
       sections.forEach((s, i) => {
@@ -331,32 +340,41 @@ export function PaperStack() {
         s.style.setProperty("--paper-dim", (dim * 0.45).toFixed(3));
       });
 
-      // Convert hauled pixels into leg-cycle phase: during each half-cycle one
-      // leg hauls exactly STROKE units, so the gripping tip moves with the line.
+      // The line is hauled exactly as fast as the page scrolls, so the
+      // gripping leg tip moves with the line: one stroke per STROKE units.
       const r = svg.getBoundingClientRect();
       const scale = r.height / VB.h; // px per viewBox unit
-      pose(pulled / (2 * STROKE * scale));
+      pose(y / (2 * STROKE * scale));
 
-      const dir = Math.sign(pulled - lastPulled);
+      const dir = Math.sign(y - lastY);
       if (dir !== 0) {
         rig.classList.toggle("is-hauling", dir > 0);
         rig.classList.toggle("is-releasing", dir < 0);
         window.clearTimeout(dirTimer);
         dirTimer = window.setTimeout(() => rig.classList.remove("is-hauling", "is-releasing"), 180);
       }
-      lastPulled = pulled;
+      lastY = y;
 
-      const mouthY = r.top + (MOUTH.y - VB.y) * scale;
-      if (incoming === -1) {
-        rig.classList.remove("is-pulling");
-        thread.style.height = "0px";
-        return;
+      // The line runs to the edge of the incoming sheet when one is on its
+      // way up, otherwise down off the bottom of the screen.
+      let incoming = -1;
+      for (let i = 1; i < sections.length; i++) {
+        const dock = Math.max(stickTops[i], headerBottom);
+        if (tops[i] > dock + 0.5 && tops[i] < vh - 1) {
+          incoming = i;
+          break;
+        }
       }
-      const len = Math.max(0, tops[incoming] - mouthY);
-      rig.classList.add("is-pulling");
-      thread.style.top = `${(MOUTH.y - VB.y) * scale}px`;
+      const mouthTop = (MOUTH.y - VB.y) * scale;
+      const mouthY = r.top + mouthTop;
+      const end = incoming === -1 ? vh + 20 : tops[incoming];
+      const len = Math.max(0, end - mouthY);
+      thread.style.top = `${mouthTop}px`;
       thread.style.height = `${len}px`;
-      patch.style.top = `${(MOUTH.y - VB.y) * scale + len}px`;
+      // beads ride with the page, so you can see the line being hauled
+      thread.style.backgroundPosition = `0 ${(-y).toFixed(1)}px`;
+      patch.style.top = `${mouthTop + len}px`;
+      rig.classList.toggle("is-hooked", incoming !== -1);
     };
 
     const schedule = () => {
@@ -403,27 +421,71 @@ export function PaperStack() {
           strokeLinecap="round"
           strokeLinejoin="round"
         >
+          <defs>
+            <radialGradient id="sp-abdomen" cx="45%" cy="35%" r="70%">
+              <stop offset="0%" stopColor="#2a3150" />
+              <stop offset="60%" stopColor="#11152a" />
+              <stop offset="100%" stopColor="#05060d" />
+            </radialGradient>
+            <radialGradient id="sp-head" cx="45%" cy="40%" r="70%">
+              <stop offset="0%" stopColor="#262c48" />
+              <stop offset="100%" stopColor="#070912" />
+            </radialGradient>
+            <linearGradient id="sp-neon" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#ff3d6e" />
+              <stop offset="55%" stopColor="#ff2bd6" />
+              <stop offset="100%" stopColor="#38e8ff" />
+            </linearGradient>
+            <filter id="sp-glow" x="-60%" y="-60%" width="220%" height="220%">
+              <feGaussianBlur stdDeviation="2.2" result="b" />
+              <feMerge>
+                <feMergeNode in="b" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
           <g ref={bodyRef}>
-            <g className="sp-legs" stroke="currentColor" strokeWidth="3.6">
+            {/* legs: dark segments with glowing joints */}
+            <g stroke="#0a0c16" strokeWidth="3.2">
               {Array.from({ length: 6 }).map((_, i) => (
                 <path key={i} ref={(el) => { backRefs.current[i] = el; }} />
               ))}
             </g>
-            {/* abdomen (up) and head (down, facing the prey) */}
-            <ellipse cx="0" cy="-19" rx="13" ry="17" fill="currentColor" />
-            <path d="M-6 -27 Q0 -31 6 -27 M-7 -18 Q0 -22 7 -18 M-6 -9 Q0 -13 6 -9" stroke="#e0182d" strokeWidth="2" />
-            <ellipse cx="0" cy="4" rx="9.5" ry="10.5" fill="currentColor" />
-            <circle cx="-3.2" cy="9" r="1.7" fill="#fff" />
-            <circle cx="3.2" cy="9" r="1.7" fill="#fff" />
-            <path d="M-2.4 12.5 L-1.4 15.5 M2.4 12.5 L1.4 15.5" stroke="currentColor" strokeWidth="2.2" />
-            <g className="sp-front-legs" stroke="currentColor" strokeWidth="4.2">
+            <g className="sp-front-legs" stroke="#0a0c16" strokeWidth="3.6">
               {[0, 1].map((i) => (
                 <path key={i} ref={(el) => { frontRefs.current[i] = el; }} />
               ))}
             </g>
+            <g fill="#38e8ff" filter="url(#sp-glow)">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <circle key={i} r="1.6" ref={(el) => { backKneeRefs.current[i] = el; }} />
+              ))}
+              {[0, 1].map((i) => (
+                <circle key={i} r="1.8" ref={(el) => { kneeRefs.current[i] = el; }} />
+              ))}
+            </g>
             {[0, 1].map((i) => (
-              <circle key={i} ref={(el) => { clawRefs.current[i] = el; }} r="2" fill="currentColor" />
+              <circle key={i} r="2" fill="#ff2bd6" filter="url(#sp-glow)" ref={(el) => { clawRefs.current[i] = el; }} />
             ))}
+
+            {/* abdomen (up) with an original glowing marking */}
+            <ellipse cx="0" cy="-14" rx="11.5" ry="13" fill="url(#sp-abdomen)" stroke="#05060d" strokeWidth="1" />
+            <g filter="url(#sp-glow)" stroke="url(#sp-neon)" strokeWidth="1.9">
+              <path d="M0 -24 L5 -16 L0 -8 L-5 -16 Z" />
+              <path d="M-7.5 -20 Q-9 -14 -7.5 -8 M7.5 -20 Q9 -14 7.5 -8" />
+              <path d="M0 -8 L0 -4" />
+            </g>
+            {/* waist + head (down, facing the line) */}
+            <ellipse cx="0" cy="0" rx="3" ry="2.4" fill="#070912" />
+            <ellipse cx="0" cy="7" rx="7.5" ry="7" fill="url(#sp-head)" stroke="#05060d" strokeWidth="1" />
+            <g fill="#ff3d6e" filter="url(#sp-glow)">
+              <circle cx="-2.4" cy="10.2" r="1.15" />
+              <circle cx="2.4" cy="10.2" r="1.15" />
+              <circle cx="-4.6" cy="8.6" r="0.75" />
+              <circle cx="4.6" cy="8.6" r="0.75" />
+            </g>
+            <path d="M-1.6 12.2 L-1 14.2 M1.6 12.2 L1 14.2" stroke="#05060d" strokeWidth="1.6" />
           </g>
         </svg>
         <div className="sp-puller-thread" ref={threadRef} />
