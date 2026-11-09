@@ -864,7 +864,7 @@ html {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 12%;
+  object-position: 50% 50%;
 }
 .ab-suit {
   /* generated from the same photo, so the defaults line up exactly */
@@ -872,7 +872,7 @@ html {
   left: var(--suit-left);
   width: var(--suit-width);
   height: auto;
-  aspect-ratio: 992 / 1056;
+  aspect-ratio: 1;
   inset: auto;
   pointer-events: none;
 }

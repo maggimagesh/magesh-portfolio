@@ -124,12 +124,12 @@ export function AboutSection() {
               <div className="ab-figure">
                 <img
                   className="ab-photo"
-                  src={resume.personal.avatar ?? "/logos/me.png"}
-                  alt={`${resume.personal.name} wearing an original tech suit`}
-                  width={992}
-                  height={1056}
+                  src="/about/bust-photo-v2.webp"
+                  alt={`${resume.personal.name} in black and red armour`}
+                  width={490}
+                  height={490}
                 />
-                <img className="ab-suit" src="/about/suit.webp" alt="" aria-hidden="true" width={992} height={1056} />
+                <img className="ab-suit" src="/about/bust-suit-v2.webp" alt="" aria-hidden="true" width={490} height={490} />
               </div>
             </div>
           </div>
