@@ -118,11 +118,19 @@ export function AboutSection() {
           <div className="ab-hang" ref={hangRef}>
             <span className="ab-thread" aria-hidden="true" />
             <div className="ab-frame" ref={frameRef}>
-              <img
-                className="ab-photo"
-                src={resume.personal.avatar ?? "/logos/me.png"}
-                alt={`${resume.personal.name}, ${resume.personal.title}`}
-              />
+              {/* photo + suit are one unit: they share the frame, so they
+                  swing, scale and colour-shift together, and hover never
+                  removes the suit */}
+              <div className="ab-figure">
+                <img
+                  className="ab-photo"
+                  src={resume.personal.avatar ?? "/logos/me.png"}
+                  alt={`${resume.personal.name} wearing an original tech suit`}
+                  width={992}
+                  height={1056}
+                />
+                <img className="ab-suit" src="/about/suit.webp" alt="" aria-hidden="true" width={992} height={1056} />
+              </div>
             </div>
           </div>
         </div>
