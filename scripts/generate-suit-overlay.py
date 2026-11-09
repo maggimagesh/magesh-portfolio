@@ -1,5 +1,6 @@
 """
-Generates an original tech-suit overlay for public/logos/me.png.
+Generates an original black-and-red armoured tech-suit overlay for
+public/logos/me.png, plus a suited cut-out for the hero.
 
 The overlay is the same size as the photo with a transparent background and
 covers only the body (from the collar down), so the face stays visible. It
@@ -46,21 +47,24 @@ cover = alpha * suit_m
 g = np.array(src.convert('L')).astype(float) / 255
 low = np.array(Image.fromarray((g * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(28))).astype(float) / 255
 detail = np.clip((g - low) * 2.4, -0.45, 0.45)               # creases and folds
+detail *= np.clip(1.6 - low * 1.6, 0.35, 1.0)                # the white shirt shouldn't show through
 light = 0.5 + 0.35 * (1 - (yy - 330) / (H - 330)) - 0.18 * np.abs((xx - 470) / 330.0)  # soft key light from above
 shade = np.clip(light + detail, 0.12, 1.25)
 
-BASE = np.array([24, 26, 33])        # graphite
-PLATE = np.array([72, 79, 96])       # sculpted armour plates
-AMBER = np.array([255, 176, 46])
+BASE = np.array([16, 17, 21])        # matte black
+PLATE = np.array([27, 29, 35])       # armour plates, dark gunmetal
+RED = np.array([232, 28, 52])        # glowing accents
 
-# ---------- 4. panels ----------
+# ---------- 4. armour plates (segmented, dark) ----------
 plates = Image.new('L', (W, H), 0)
 pd = ImageDraw.Draw(plates)
-# chest plate: broad chevron across the pecs, narrowing down the sternum
-pd.polygon([(352, 392), (462, 368), (574, 392), (604, 470), (520, 530), (470, 640), (412, 530), (330, 470)], fill=255)
-# shoulder armour
+# chest plate: broad shield across the pecs
+pd.polygon([(352, 392), (462, 372), (574, 392), (606, 468), (540, 520), (470, 548), (400, 520), (330, 468)], fill=255)
+# abdominal segments
+for i, y0 in enumerate((572, 618, 664)):
+    w = 52 - i * 5
+    pd.rounded_rectangle([470 - w, y0, 470 + w, y0 + 34], radius=14, fill=255)
 def pauldron(cx, cy, rx, ry, side):
-    # rounded shoulder pad: a half-ellipse cap that curves down the arm
     pts = []
     for i in range(41):
         t = math.pi * (i / 40)
@@ -81,42 +85,64 @@ col = (BASE * (1 - pl[..., None]) + PLATE * pl[..., None]) * shade[..., None]
 # plate bevel: light top edge, dark lower edge
 bev = np.array(plates.filter(ImageFilter.GaussianBlur(4))).astype(float) / 255
 up = np.roll(bev, 3, axis=0)
-col += np.clip(bev - up, 0, 1)[..., None] * 150
-col -= np.clip(up - bev, 0, 1)[..., None] * 110
+col += np.clip(bev - up, 0, 1)[..., None] * 85
+col -= np.clip(up - bev, 0, 1)[..., None] * 70
 
-# subtle woven fabric texture on the graphite areas
-tex = ((np.sin(xx * 0.9 + yy * 0.9) + np.sin(xx * 0.9 - yy * 0.9)) * 0.5)
-col += (tex * 4 * (1 - pl))[..., None]
+# carbon-weave texture on the fabric areas
+weave = (((xx // 4 + yy // 4) % 2) * 2 - 1) * (np.sin((xx - yy) * 0.8) * 0.5 + 0.5)
+col += (weave * 7 * (1 - pl))[..., None]
 
-# ---------- 5. glowing amber seams + emblem ----------
-L = Image.new('L', (W * S, H * S), 0)
-ld = ImageDraw.Draw(L)
+# ---------- 5. glowing red accent panels + chevron emblem ----------
+A = Image.new('L', (W * S, H * S), 0)
+ad2 = ImageDraw.Draw(A)
 def P(pts): return [(x * S, y * S) for x, y in pts]
-seams = [
-    [(330, 470), (412, 530), (470, 640), (520, 530), (604, 470)],   # under the chest plate
-    [(352, 392), (330, 470)], [(574, 392), (604, 470)],
-    [(470, 640), (470, 860)],                                       # centre line to the belt
-    [(380, 860), (560, 860)],                                       # belt
-    [(300, 690), (316, 860)], [(662, 690), (652, 860)],             # forearm guards
-]
-for sm in seams:
-    ld.line(P(sm), fill=255, width=4 * S, joint='curve')
-# original emblem: a split diamond with a check stroke (QA, "tested")
-ex, ey = 468, 470
-ld.polygon(P([(ex, ey - 26), (ex + 22, ey), (ex, ey + 26), (ex - 22, ey)]), outline=255, width=4 * S)
-ld.line(P([(ex - 10, ey + 1), (ex - 2, ey + 9), (ex + 12, ey - 9)]), fill=255, width=4 * S, joint='curve')
-lines = np.array(L.resize((W, H), Image.LANCZOS)).astype(float) / 255
-glow = np.array(Image.fromarray((lines * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(5))).astype(float) / 255
-col = col * (1 - lines[..., None] * 0.95) + AMBER * lines[..., None] * 0.95
-col += AMBER * (glow * 0.55)[..., None]
+# shoulder accent stripes sweeping down the outer arm
+ad2.polygon(P([(270, 400), (300, 382), (296, 470), (276, 560), (262, 556), (268, 470)]), fill=255)
+ad2.polygon(P([(674, 400), (644, 382), (650, 470), (668, 560), (682, 556), (676, 470)]), fill=255)
+# collar-bone accents leading to the emblem
+ad2.polygon(P([(352, 398), (420, 382), (430, 392), (362, 412)]), fill=255)
+ad2.polygon(P([(574, 398), (506, 382), (496, 392), (564, 412)]), fill=255)
+# side ribs
+for y0 in (600, 650, 700):
+    ad2.polygon(P([(352, y0), (392, y0 - 6), (394, y0 + 6), (354, y0 + 12)]), fill=255)
+    ad2.polygon(P([(588, y0), (548, y0 - 6), (546, y0 + 6), (586, y0 + 12)]), fill=255)
+# forearm bands and glove cuffs
+for (x1, x2, y) in ((268, 304, 760), (274, 310, 800), (658, 696, 760), (652, 690, 800)):
+    ad2.polygon(P([(x1, y), (x2, y - 4), (x2, y + 8), (x1, y + 12)]), fill=255)
+for (x1, x2) in ((282, 326), (668, 714)):   # thin glove cuffs at the wrist
+    ad2.polygon(P([(x1, 884), (x2, 880), (x2, 890), (x1, 894)]), fill=255)
+# belt line
+ad2.rectangle(P([(380, 856), (560, 864)]), fill=255)
+# emblem: an angular downward chevron with a notch (original)
+ex, ey = 468, 452
+emb = [(ex - 46, ey - 26), (ex - 14, ey - 12), (ex, ey - 30), (ex + 14, ey - 12), (ex + 46, ey - 26),
+       (ex + 26, ey + 8), (ex + 10, ey + 6), (ex, ey + 40), (ex - 10, ey + 6), (ex - 26, ey + 8)]
+ad2.polygon(P(emb), fill=255)
+acc = np.array(A.resize((W, H), Image.LANCZOS)).astype(float) / 255
+glow = np.array(Image.fromarray((acc * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(7))).astype(float) / 255
+# accents keep the fabric shading so they read as lit panels, not stickers
+lit = np.clip(0.55 + 0.6 * shade, 0.5, 1.3)[..., None]
+col = col * (1 - acc[..., None]) + RED * lit * acc[..., None]
+col += RED * (glow * 0.65)[..., None] * (1 - acc[..., None])
+# hot core on the emblem
+core = Image.new('L', (W, H), 0)
+ImageDraw.Draw(core).polygon([(ex - 18, ey - 10), (ex, ey - 20), (ex + 18, ey - 10), (ex, ey + 24)], fill=255)
+core = np.array(core.filter(ImageFilter.GaussianBlur(5))).astype(float) / 255
+col += np.array([255, 120, 120])[None, None, :] * (core * 0.45)[..., None]
 
 # rim light on the shoulders
 rim = np.array(Image.fromarray((alpha * 255).astype(np.uint8)).filter(ImageFilter.FIND_EDGES).filter(ImageFilter.GaussianBlur(2))).astype(float) / 255
-col += (rim * 70 * np.clip((640 - yy) / 260.0, 0, 1))[..., None]   # fades out smoothly
+col += (rim * 60 * np.clip((640 - yy) / 260.0, 0, 1))[..., None]
 
 col = np.clip(col, 0, 255)
 out = np.zeros((H, W, 4), dtype=np.uint8)
 out[..., :3] = col.astype(np.uint8)
 out[..., 3] = (cover * 255).astype(np.uint8)
-Image.fromarray(out, 'RGBA').save(OUT, quality=88, method=6)
-print('ok', OUT)
+suit_img = Image.fromarray(out, 'RGBA')
+suit_img.save(OUT, quality=88, method=6)
+
+# hero layer: the cut-out photo wearing the suit (transparent background)
+HERO = OUT.replace('suit.webp', 'suited-cutout.webp')
+cut = src.convert('RGBA'); cut.putalpha(pm)
+Image.alpha_composite(cut, suit_img).save(HERO, quality=88, method=6)
+print('ok', OUT, HERO)

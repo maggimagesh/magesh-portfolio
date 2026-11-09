@@ -12,7 +12,7 @@ const STATS = [
 ];
 
 /**
- * Portrait with a "hover to reveal" lens: a comic-poster version sits on top,
+ * Portrait with a "hover to reveal" lens: the suited-up version sits on top,
  * and a circular lens that follows the pointer reveals the real photo.
  */
 function RevealPortrait() {
@@ -55,7 +55,7 @@ function RevealPortrait() {
 
   const revealed = active || pinned;
   const real = "/spidey/me-cutout.webp";
-  const comic = resume.personal.alterEgo ?? "/spidey/comic.webp";
+  const comic = resume.personal.alterEgo ?? "/about/suited-cutout.webp";
 
   return (
     <div
@@ -74,7 +74,7 @@ function RevealPortrait() {
         setPinned((p) => !p);
       }}
       role="img"
-      aria-label={`${resume.personal.name} as comic-book art — hover or tap to reveal the photo`}
+      aria-label={`${resume.personal.name} in an armoured hero suit — hover or tap to reveal the photo`}
     >
       <div className="reveal-sky" aria-hidden="true">
         <div className="reveal-moon" />
